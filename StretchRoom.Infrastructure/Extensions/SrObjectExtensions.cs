@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 namespace StretchRoom.Infrastructure.Extensions;
 
 /// <summary>
-/// The <see cref="object"/> extensions.
+///     The <see cref="object" /> extensions.
 /// </summary>
 [PublicAPI]
 public static class SrObjectExtensions
@@ -15,12 +15,14 @@ public static class SrObjectExtensions
         Converters = { new JsonStringEnumConverter() },
         WriteIndented = true
     };
+
     private static JsonSerializerOptions DefaultJsonOptions { get; } = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter() }
     };
+
     /// <summary>
-    /// Serializes the <paramref name="obj"/> to diagnostic json string.
+    ///     Serializes the <paramref name="obj" /> to diagnostic json string.
     /// </summary>
     /// <param name="obj">The object.</param>
     /// <returns>The serialized json string.</returns>
@@ -31,7 +33,7 @@ public static class SrObjectExtensions
     }
 
     /// <summary>
-    /// Serializes the <paramref name="obj"/> to default json string.
+    ///     Serializes the <paramref name="obj" /> to default json string.
     /// </summary>
     /// <param name="obj">The object.</param>
     /// <returns>The serialized json string.</returns>

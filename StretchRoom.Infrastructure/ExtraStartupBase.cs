@@ -39,12 +39,12 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
     /// <summary>
     ///     Indicates that server should user authorization.
     /// </summary>
-    protected bool UseAuthorization { get; init; } = false;
+    protected bool UseAuthorization { get; init; }
 
     /// <summary>
     ///     Indicates that server should use authentication.
     /// </summary>
-    protected bool UseAuthentication { get; init; } = false;
+    protected bool UseAuthentication { get; init; }
 
     /// <summary>
     ///     The service api info.
