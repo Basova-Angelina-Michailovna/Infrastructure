@@ -17,6 +17,7 @@ using Prometheus;
 using Serilog;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 using StretchRoom.Infrastructure.ControllerFilters;
+using StretchRoom.Infrastructure.Extensions;
 using StretchRoom.Infrastructure.Helpers;
 using StretchRoom.Infrastructure.Interfaces;
 using StretchRoom.Infrastructure.Middlewares;
@@ -115,11 +116,12 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
     public void Configure(IApplicationBuilder app, IHostEnvironment env)
     {
         if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
-        app.UseSerilogRequestLogging(opts => { opts.IncludeQueryInRequestPath = true; });
 
         app.UsePathBase(ServiceApiInfo.BaseAddress);
         app.UseRouting();
         app.UseCors(c => c.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod());
+
+        app.UseRequestLogging();
 
         app.UseMetricServer($"{ServiceApiInfo.BaseAddress}{RequestMetricsMiddleware.MetricsPath}");
         app.UseHttpMetrics();
@@ -143,8 +145,8 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
 
         ConfigureMiddlewares(app, env);
 
-        app.UseMiddleware<ExceptionCatcherMiddleware>();
-        app.UseMiddleware<RequestMetricsMiddleware>();
+        app.UseExceptionCatcher();
+        app.UseRequestMetrics();
 
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }
