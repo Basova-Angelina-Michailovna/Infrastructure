@@ -84,11 +84,25 @@ public struct OperationResult<TResponse, TError>
         if (isSuccess)
         {
             var result = await response.GetStreamAsync();
-            return new OperationResult<Stream, TError>(result, null, true, response.StatusCode);
+            return OperationResult<Stream, TError>.Success(result, response.StatusCode);
         }
 
         var error = await response.GetJsonAsync<TError>();
-        return new OperationResult<Stream, TError>(null, error, false, response.StatusCode);
+        return OperationResult<Stream, TError>.Failure(error, response.StatusCode);
+    }
+
+    internal static async Task<OperationResult<byte[], TError>> CreateFromRawResponseAsync(
+        IFlurlResponse response)
+    {
+        var isSuccess = response.ResponseMessage.IsSuccessStatusCode;
+        if (isSuccess)
+        {
+            var result = await response.GetBytesAsync();
+            return OperationResult<byte[], TError>.Success(result, response.StatusCode);
+        }
+
+        var error = await response.GetJsonAsync<TError>();
+        return OperationResult<byte[], TError>.Failure(error, response.StatusCode);
     }
 }
 

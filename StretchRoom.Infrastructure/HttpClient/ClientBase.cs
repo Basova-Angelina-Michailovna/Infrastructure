@@ -64,7 +64,7 @@ public abstract class ClientBase
     }
 
     /// <summary>
-    ///     Sends GET request with awaiting JSON response.
+    ///     Sends GET request with awaiting serialized body response.
     /// </summary>
     /// <param name="url">The url transform.</param>
     /// <param name="headers">The headers.</param>
@@ -85,6 +85,26 @@ public abstract class ClientBase
     }
 
     /// <summary>
+    ///     Sends GET request.
+    /// </summary>
+    /// <param name="url">The url transform.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TResponse,TError}" />.</returns>
+    protected async Task<OperationResult<TError>> GetAsync<TError>(
+        Action<Url> url,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Get, token: token);
+
+        return await OperationResult<TError>.CreateFromResponseAsync(response);
+    }
+
+    /// <summary>
     ///     Sends GET request with awaiting <see cref="Stream" /> response.
     /// </summary>
     /// <param name="url">The url transform.</param>
@@ -99,13 +119,75 @@ public abstract class ClientBase
     {
         var request = PrepareRequest(url, headers);
 
-        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Get, token: token);
+        var response =
+            await ExecuteWithPolicyAsync(request, HttpMethod.Get, HttpCompletionOption.ResponseHeadersRead, token);
 
         return await OperationResult<Stream, TError>.CreateFromStreamResponseAsync(response);
     }
 
     /// <summary>
-    ///     Sends POST request with specified json body.
+    ///     Sends GET request with awaiting <see cref="byte" /> array response.
+    /// </summary>
+    /// <param name="url">The url transform.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TResponse,TError}" />.</returns>
+    protected async Task<OperationResult<byte[], TError>> GetRawAsync<TError>(
+        Action<Url> url,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Get, token: token);
+
+        return await OperationResult<byte[], TError>.CreateFromRawResponseAsync(response);
+    }
+    
+    /// <summary>
+    ///     Sends DELETE request with awaiting serialized body response.
+    /// </summary>
+    /// <param name="url">The url transform.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TResponse">The success response type.</typeparam>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TResponse,TError}" />.</returns>
+    protected async Task<OperationResult<TResponse, TError>> DeleteJsonAsync<TResponse, TError>(
+        Action<Url> url,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TResponse : class where TError : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Delete, token: token);
+
+        return await OperationResult<TResponse, TError>.CreateFromResponseAsync(response);
+    }
+
+    /// <summary>
+    ///     Sends DELETE request.
+    /// </summary>
+    /// <param name="url">The url transform.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TResponse,TError}" />.</returns>
+    protected async Task<OperationResult<TError>> DeleteAsync<TError>(
+        Action<Url> url,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Delete, token: token);
+
+        return await OperationResult<TError>.CreateFromResponseAsync(response);
+    }
+
+    /// <summary>
+    ///     Sends POST request with specified serialized body.
     /// </summary>
     /// <param name="url">The url.</param>
     /// <param name="body">The body.</param>
@@ -122,12 +204,146 @@ public abstract class ClientBase
     {
         var request = PrepareRequest(url, headers);
 
-        var json = DefaultSerializer.Serialize(body);
-        request.Content = new CapturedJsonContent(json);
+        var serializedBody = DefaultSerializer.Serialize(body);
+        request.Content = new CapturedJsonContent(serializedBody);
 
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
 
         return await OperationResult<TError>.CreateFromResponseAsync(response);
+    }
+
+    /// <summary>
+    ///     Sends POST request with specified stream body <br/>
+    ///     and with awaiting <typeparamref name="TResponse" /> deserialized
+    ///     response.
+    /// </summary>
+    /// <param name="url">The url.</param>
+    /// <param name="body">The body.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <typeparam name="TResponse">The success response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TError}" />.</returns>
+    protected async Task<OperationResult<TResponse, TError>> PostStreamAsync<TResponse, TError>(
+        Action<Url> url,
+        Stream body,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class where TResponse : class
+    {
+        var request = PrepareRequest(url, headers);
+        
+        request.Content = new StreamContent(body);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
+
+        return await OperationResult<TResponse, TError>.CreateFromResponseAsync(response);
+    }
+    
+    /// <summary>
+    ///     Sends POST request with specified stream body.
+    /// </summary>
+    /// <param name="url">The url.</param>
+    /// <param name="body">The body.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TError}" />.</returns>
+    protected async Task<OperationResult<TError>> PostStreamAsync<TError>(
+        Action<Url> url,
+        Stream body,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class
+    {
+        var request = PrepareRequest(url, headers);
+        
+        request.Content = new StreamContent(body);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
+
+        return await OperationResult<TError>.CreateFromResponseAsync(response);
+    }
+
+    /// <summary>
+    ///     Sends POST request with specified serialized body <br/>
+    ///     and with awaiting <typeparamref name="TResponse" /> deserialized
+    ///     response.
+    /// </summary>
+    /// <param name="url">The url.</param>
+    /// <param name="body">The body.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TRequest">The request object type.</typeparam>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <typeparam name="TResponse">The success response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TError}" />.</returns>
+    protected async Task<OperationResult<TResponse, TError>> PostJsonAsync<TRequest, TResponse, TError>(
+        Action<Url> url,
+        TRequest body,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class where TResponse : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var serializedBody = DefaultSerializer.Serialize(body);
+        request.Content = new CapturedJsonContent(serializedBody);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
+
+        return await OperationResult<TResponse, TError>.CreateFromResponseAsync(response);
+    }
+
+    /// <summary>
+    ///     Sends PUT request with specified serialized body.
+    /// </summary>
+    /// <param name="url">The url.</param>
+    /// <param name="body">The body.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TRequest">The request object type.</typeparam>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TError}" />.</returns>
+    protected async Task<OperationResult<TError>> PutJsonAsync<TRequest, TError>(
+        Action<Url> url,
+        TRequest body,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var serializedBody = DefaultSerializer.Serialize(body);
+        request.Content = new CapturedJsonContent(serializedBody);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Put, token: token);
+
+        return await OperationResult<TError>.CreateFromResponseAsync(response);
+    }
+
+    /// <summary>
+    ///     Sends PUT request with specified serialized body and with awaiting <typeparamref name="TResponse" /> deserialized
+    ///     response.
+    /// </summary>
+    /// <param name="url">The url.</param>
+    /// <param name="body">The body.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TRequest">The request object type.</typeparam>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <typeparam name="TResponse">The success response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TError}" />.</returns>
+    protected async Task<OperationResult<TResponse, TError>> PutJsonAsync<TRequest, TResponse, TError>(
+        Action<Url> url,
+        TRequest body,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class where TResponse : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var serializedBody = DefaultSerializer.Serialize(body);
+        request.Content = new CapturedJsonContent(serializedBody);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Put, token: token);
+
+        return await OperationResult<TResponse, TError>.CreateFromResponseAsync(response);
     }
 
     /// <summary>
@@ -166,7 +382,7 @@ public abstract class ClientBase
     /// <param name="request">The request to be executed.</param>
     /// <param name="token">The cancellation token.</param>
     /// <returns>The <see cref="Task" /> which result contains the new instance of <see cref="IFlurlResponse" />.</returns>
-    protected static Task<IFlurlResponse> ExecuteWithoutPolicyAsync(
+    protected virtual Task<IFlurlResponse> ExecuteWithoutPolicyAsync(
         Func<IFlurlRequest, CancellationToken, Task<IFlurlResponse>> func,
         IFlurlRequest request,
         CancellationToken token = default)

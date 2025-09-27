@@ -49,7 +49,8 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
             var body = noRequestLogging is null
                 ? await new StreamReader(request.Body).ReadToEndAsync()
                 : "NO-LOGGING";
-            logger.LogDebug("Request ==> {path} | id: {correlationId} | body: {body}", request.GetDisplayUrl(), traceIdentifier,
+            logger.LogDebug("Request ==> {path} | id: {correlationId} | body: {body}", request.GetDisplayUrl(),
+                traceIdentifier,
                 body);
         }
         else
