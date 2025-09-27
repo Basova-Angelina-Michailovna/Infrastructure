@@ -1,0 +1,236 @@
+using System.Diagnostics;
+using Flurl;
+using Flurl.Http;
+using Flurl.Http.Configuration;
+using Flurl.Http.Content;
+using JetBrains.Annotations;
+using Microsoft.Extensions.Logging;
+using Polly;
+
+namespace StretchRoom.Infrastructure.HttpClient;
+
+/// <summary>
+///     The <see cref="ClientBase" /> class.
+/// </summary>
+[PublicAPI]
+public abstract class ClientBase
+{
+    private readonly IFlurlClient _client;
+    private readonly ILogger _logger;
+
+    /// <summary>
+    ///     Initiates the new instance of <see cref="ClientBase" />.
+    /// </summary>
+    /// <param name="clientCache">The client cache.</param>
+    /// <param name="baseUrlResolver">The base url resolver.</param>
+    /// <param name="loggerFactory">The logger factory.</param>
+    protected ClientBase(IFlurlClientCache clientCache, Func<string> baseUrlResolver, ILoggerFactory loggerFactory)
+    {
+        Policy = DefaultClientPollyHelper.CreateDefaultHttpPolly<IFlurlResponse>(Timeout);
+        _client = clientCache.GetOrAdd(ClientName, baseUrlResolver.Invoke(), ConfigureClient);
+        _logger = loggerFactory.CreateLogger(GetType());
+    }
+
+    /// <summary>
+    ///     The client name to get it from <see cref="IFlurlClientCache" />.
+    /// </summary>
+    protected string ClientName => GetClientName();
+
+    /// <summary>
+    ///     The default response awaiting timeout.
+    /// </summary>
+    protected TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    ///     The default http request executing policy.
+    /// </summary>
+    protected IAsyncPolicy<IFlurlResponse> Policy { get; init; }
+
+    /// <summary>
+    ///     The default request and response serializer.
+    /// </summary>
+    public ISerializer DefaultSerializer { get; init; } = new DefaultJsonSerializer();
+
+    private void ConfigureClient(IFlurlClientBuilder obj)
+    {
+        obj.AllowAnyHttpStatus();
+        obj.WithTimeout(Timeout);
+        obj.WithSettings(act => { act.JsonSerializer = DefaultSerializer; });
+    }
+
+    private string GetClientName()
+    {
+        return $"{GetType().Name}{nameof(ClientBase)}";
+    }
+
+    /// <summary>
+    ///     Sends GET request with awaiting JSON response.
+    /// </summary>
+    /// <param name="url">The url transform.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TResponse">The success response type.</typeparam>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TResponse,TError}" />.</returns>
+    protected async Task<OperationResult<TResponse, TError>> GetJsonAsync<TResponse, TError>(
+        Action<Url> url,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TResponse : class where TError : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Get, token: token);
+
+        return await OperationResult<TResponse, TError>.CreateFromResponseAsync(response);
+    }
+
+    /// <summary>
+    ///     Sends GET request with awaiting <see cref="Stream" /> response.
+    /// </summary>
+    /// <param name="url">The url transform.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TResponse,TError}" />.</returns>
+    protected async Task<OperationResult<Stream, TError>> GetStreamAsync<TError>(
+        Action<Url> url,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Get, token: token);
+
+        return await OperationResult<Stream, TError>.CreateFromStreamResponseAsync(response);
+    }
+
+    /// <summary>
+    ///     Sends POST request with specified json body.
+    /// </summary>
+    /// <param name="url">The url.</param>
+    /// <param name="body">The body.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TRequest">The request object type.</typeparam>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TError}" />.</returns>
+    protected async Task<OperationResult<TError>> PostJsonAsync<TRequest, TError>(
+        Action<Url> url,
+        TRequest body,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var json = DefaultSerializer.Serialize(body);
+        request.Content = new CapturedJsonContent(json);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
+
+        return await OperationResult<TError>.CreateFromResponseAsync(response);
+    }
+
+    /// <summary>
+    ///     Executes the flurl request with <see cref="Policy" />.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="method">The http method.</param>
+    /// <param name="completionOption">The completion options.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <returns>The <see cref="Task" /> which result contains the new instance of <see cref="IFlurlResponse" />.</returns>
+    protected async Task<IFlurlResponse> ExecuteWithPolicyAsync(
+        IFlurlRequest request,
+        HttpMethod method,
+        HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead,
+        CancellationToken token = default)
+    {
+        var requestId = Guid.CreateVersion7().ToString("N").ToUpper();
+        LogRequest(method, request, requestId);
+        var stopwatch = Stopwatch.StartNew();
+        var result = await Policy.ExecuteAsync(async () =>
+        {
+            return await ExecuteWithoutPolicyAsync(
+                (r, t) => r.SendAsync(method, request.Content, completionOption, t),
+                request,
+                token);
+        });
+        stopwatch.Stop();
+        LogResponse(method, result, request, stopwatch.Elapsed, requestId);
+        return result;
+    }
+
+    /// <summary>
+    ///     Executes the request delegate without policy.
+    /// </summary>
+    /// <param name="func">The delegate to execute.</param>
+    /// <param name="request">The request to be executed.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <returns>The <see cref="Task" /> which result contains the new instance of <see cref="IFlurlResponse" />.</returns>
+    protected static Task<IFlurlResponse> ExecuteWithoutPolicyAsync(
+        Func<IFlurlRequest, CancellationToken, Task<IFlurlResponse>> func,
+        IFlurlRequest request,
+        CancellationToken token = default)
+    {
+        return func.Invoke(request, token);
+    }
+
+    private IFlurlRequest PrepareRequest(Action<Url> url, IDictionary<string, object>? headers)
+    {
+        var requestHeaders = GetDefaultHeaders(headers);
+        var request = _client.Request().WithHeaders(requestHeaders);
+        url.Invoke(request.Url);
+        return request;
+    }
+
+    private static Dictionary<string, object> GetDefaultHeaders(IDictionary<string, object>? additionalHeaders = null)
+    {
+        var headers = new Dictionary<string, object>();
+        if (additionalHeaders == null) return headers;
+        foreach (var header in additionalHeaders) headers.Add(header.Key, header.Value);
+        return headers;
+    }
+
+    private void LogRequest(
+        HttpMethod method,
+        IFlurlRequest request,
+        string requestId)
+    {
+        if (_logger.IsEnabled(LogLevel.Debug)
+            && request.Content is CapturedJsonContent content)
+        {
+            _logger.LogDebug("[Send {id}] {method} {url} with body:\n{body}", requestId, method, request.Url,
+                content.Content);
+            return;
+        }
+
+        _logger.LogInformation("[Send {id}] {method} {url}", requestId, method, request.Url);
+    }
+
+    private void LogResponse(
+        HttpMethod method,
+        IFlurlResponse response,
+        IFlurlRequest request,
+        TimeSpan duration,
+        string requestId)
+    {
+        if (_logger.IsEnabled(LogLevel.Debug)
+            && response.ResponseMessage.Content is CapturedJsonContent content)
+        {
+            _logger.LogDebug("[Receive {id}] {method} {url} {statusCode} for {duration}ms with body:\n{body}",
+                requestId,
+                method,
+                request.Url,
+                response.StatusCode,
+                duration.TotalMilliseconds,
+                content.Content);
+            return;
+        }
+
+        _logger.LogInformation("[Receive {id}] {method} {url} {statusCode} for {duration}ms",
+            requestId,
+            method,
+            request.Url,
+            response.StatusCode,
+            duration.TotalMilliseconds);
+    }
+}

@@ -1,7 +1,9 @@
 using System.Diagnostics;
+using System.Reflection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Logging;
+using StretchRoom.Infrastructure.Attributes;
 
 namespace StretchRoom.Infrastructure.Middlewares;
 
@@ -18,10 +20,13 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
     /// <param name="context">The context.</param>
     public async Task InvokeAsync(HttpContext context)
     {
+        var endpoint = context.GetEndpoint();
+        var noRequestLogging = endpoint?.RequestDelegate?.Method.GetCustomAttribute<NoRequestBodyLoggingAttribute>();
+        var noResponseLogging = endpoint?.RequestDelegate?.Method.GetCustomAttribute<NoResponseBodyLoggingAttribute>();
         var stopwatch = Stopwatch.StartNew();
         var request = context.Request;
 
-        await LogRequestAsync(request, context.TraceIdentifier);
+        await LogRequestAsync(request, context.TraceIdentifier, noRequestLogging);
 
         try
         {
@@ -32,18 +37,19 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
             var response = context.Response;
 
             stopwatch.Stop();
-            await LogResponseAsync(response, context.TraceIdentifier, stopwatch.Elapsed);
+            await LogResponseAsync(response, context.TraceIdentifier, stopwatch.Elapsed, noResponseLogging);
         }
     }
 
-    private async Task LogRequestAsync(HttpRequest request, string traceIdentifier)
+    private async Task LogRequestAsync(HttpRequest request, string traceIdentifier,
+        NoRequestBodyLoggingAttribute? noRequestLogging)
     {
         if (logger.IsEnabled(LogLevel.Debug))
         {
-            var body = !request.HasFormContentType
+            var body = noRequestLogging is null
                 ? await new StreamReader(request.Body).ReadToEndAsync()
-                : "FORM-DATA";
-            logger.LogDebug("Request ==> {path} | id: {correlationId} | body: {body}", request.Path, traceIdentifier,
+                : "NO-LOGGING";
+            logger.LogDebug("Request ==> {path} | id: {correlationId} | body: {body}", request.GetDisplayUrl(), traceIdentifier,
                 body);
         }
         else
@@ -52,14 +58,14 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
         }
     }
 
-    private async Task LogResponseAsync(HttpResponse response, string traceIdentifier, TimeSpan duration)
+    private async Task LogResponseAsync(HttpResponse response, string traceIdentifier, TimeSpan duration,
+        NoResponseBodyLoggingAttribute? noResponseLogging)
     {
         if (logger.IsEnabled(LogLevel.Debug))
         {
-            var containFormData = response.ContentType?.Contains("form") ?? false;
-            var body = !containFormData
+            var body = noResponseLogging is null
                 ? await new StreamReader(response.Body).ReadToEndAsync()
-                : "FORM-DATA";
+                : "NO-LOGGING";
             logger.LogDebug("Response <== {path} | id: {correlationId} | duration: {duration} | body: {body}",
                 response.HttpContext.Request.GetDisplayUrl(), traceIdentifier, duration, body);
         }

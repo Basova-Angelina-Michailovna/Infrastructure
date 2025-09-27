@@ -1,0 +1,155 @@
+using Flurl.Http;
+using JetBrains.Annotations;
+
+namespace StretchRoom.Infrastructure.HttpClient;
+
+/// <summary>
+///     The <see cref="OperationResult{TResponse,TError}" /> struct.
+/// </summary>
+/// <typeparam name="TResponse">The success response type.</typeparam>
+/// <typeparam name="TError">The error response type.</typeparam>
+[PublicAPI]
+public struct OperationResult<TResponse, TError>
+    where TError : class
+    where TResponse : class
+{
+    /// <summary>
+    ///     The success result.
+    /// </summary>
+    public TResponse? Result { get; }
+
+    /// <summary>
+    ///     The error result.
+    /// </summary>
+    public TError? Error { get; }
+
+    /// <summary>
+    ///     Indicates that response is success.
+    /// </summary>
+    public bool IsSuccess { get; }
+
+    /// <summary>
+    ///     The status code. Default is '-1'.
+    /// </summary>
+    public int StatusCode { get; }
+
+    private OperationResult(TResponse? result, TError? error, bool isSuccess, int statusCode)
+    {
+        Result = result;
+        Error = error;
+        IsSuccess = isSuccess;
+        StatusCode = statusCode;
+    }
+
+    /// <summary>
+    ///     Creates the success result with specified result.
+    /// </summary>
+    /// <param name="result">The result.</param>
+    /// <param name="statusCode">The status code.</param>
+    /// <returns>The new instance of <see cref="OperationResult{TResponse,TError}" />.</returns>
+    public static OperationResult<TResponse, TError> Success(TResponse result, int statusCode = -1)
+    {
+        return new OperationResult<TResponse, TError>(result, null, true, statusCode);
+    }
+
+    /// <summary>
+    ///     Creates the failure result with specified error.
+    /// </summary>
+    /// <param name="result">The error result.</param>
+    /// <param name="statusCode">The status code.</param>
+    /// <returns>The new instance of <see cref="OperationResult{TResponse,TError}" />.</returns>
+    public static OperationResult<TResponse, TError> Failure(TError result, int statusCode = -1)
+    {
+        return new OperationResult<TResponse, TError>(null, result, false, statusCode);
+    }
+
+    internal static async Task<OperationResult<TResponse, TError>> CreateFromResponseAsync(
+        IFlurlResponse response)
+    {
+        var isSuccess = response.ResponseMessage.IsSuccessStatusCode;
+        if (isSuccess)
+        {
+            var result = await response.GetJsonAsync<TResponse>();
+            return Success(result, response.StatusCode);
+        }
+
+        var error = await response.GetJsonAsync<TError>();
+        return Failure(error, response.StatusCode);
+    }
+
+    internal static async Task<OperationResult<Stream, TError>> CreateFromStreamResponseAsync(
+        IFlurlResponse response)
+    {
+        var isSuccess = response.ResponseMessage.IsSuccessStatusCode;
+        if (isSuccess)
+        {
+            var result = await response.GetStreamAsync();
+            return new OperationResult<Stream, TError>(result, null, true, response.StatusCode);
+        }
+
+        var error = await response.GetJsonAsync<TError>();
+        return new OperationResult<Stream, TError>(null, error, false, response.StatusCode);
+    }
+}
+
+/// <summary>
+///     The <see cref="OperationResult{TError}" /> struct.
+/// </summary>
+/// <typeparam name="TError">The error response type.</typeparam>
+public struct OperationResult<TError>
+    where TError : class
+{
+    /// <summary>
+    ///     The error result.
+    /// </summary>
+    public TError? Error { get; }
+
+    /// <summary>
+    ///     Indicates that response is success.
+    /// </summary>
+    public bool IsSuccess { get; }
+
+    /// <summary>
+    ///     The status code. Default is '-1'.
+    /// </summary>
+    public int StatusCode { get; }
+
+    private OperationResult(TError? error, bool isSuccess, int statusCode)
+    {
+        Error = error;
+        IsSuccess = isSuccess;
+        StatusCode = statusCode;
+    }
+
+    /// <summary>
+    ///     Creates the success result with specified result.
+    /// </summary>
+    /// <param name="result">The result.</param>
+    /// <param name="statusCode">The status code.</param>
+    /// <returns>The new instance of <see cref="OperationResult{TResponse,TError}" />.</returns>
+    public static OperationResult<TError> Success(int statusCode = -1)
+    {
+        return new OperationResult<TError>(null, true, statusCode);
+    }
+
+    /// <summary>
+    ///     Creates the failure result with specified error.
+    /// </summary>
+    /// <param name="result">The error result.</param>
+    /// <param name="statusCode">The status code.</param>
+    /// <returns>The new instance of <see cref="OperationResult{TResponse,TError}" />.</returns>
+    public static OperationResult<TError> Failure(TError result, int statusCode = -1)
+    {
+        return new OperationResult<TError>(result, false, statusCode);
+    }
+
+    internal static async Task<OperationResult<TError>> CreateFromResponseAsync(
+        IFlurlResponse response)
+    {
+        var isSuccess = response.ResponseMessage.IsSuccessStatusCode;
+        if (isSuccess) return Success(response.StatusCode);
+
+        var error = await response.GetJsonAsync<TError>();
+        return Failure(error, response.StatusCode);
+    }
+}
