@@ -23,6 +23,7 @@ using StretchRoom.Infrastructure.Interfaces;
 using StretchRoom.Infrastructure.Middlewares;
 using StretchRoom.Infrastructure.Models;
 using StretchRoom.Infrastructure.Options;
+using StretchRoom.Infrastructure.Services.ExecutedServices;
 
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -102,10 +103,9 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
         ConfigureHealthChecks(healthChecksBuilder);
 
         services.AddSingleton<ICommandExecutor, CommandExecutor>();
-        // TODO: check all services
-        // TODO: write tests
-        // TODO: deploy to github
         ServicesConfiguration(services);
+        
+        services.ExecuteAllBeforeHostingStarted();
     }
 
     /// <summary>

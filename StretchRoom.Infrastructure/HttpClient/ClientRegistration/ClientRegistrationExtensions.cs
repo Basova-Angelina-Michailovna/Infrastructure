@@ -119,6 +119,7 @@ public class ClientBaseRegistrationRegistrator<TInterface, TImplementation>(ISer
             return;
         }
 
+        // TODO: add option to forward auth header from incoming request to client request. See IHttpContextAccessor
         services.AddSingleton<TInterface, TImplementation>(sp =>
             ActivatorUtilities.CreateInstance<TImplementation>(sp, _baseUrlResolver));
     }

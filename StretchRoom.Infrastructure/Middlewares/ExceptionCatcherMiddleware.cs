@@ -11,7 +11,7 @@ internal sealed class ExceptionCatcherMiddleware(RequestDelegate next)
         {
             await next.Invoke(httpContext);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not ApiException)
         {
             ApiExceptionHelper.ThrowException(ex);
         }
