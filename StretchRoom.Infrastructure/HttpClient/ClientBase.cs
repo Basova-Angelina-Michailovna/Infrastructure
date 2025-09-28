@@ -15,18 +15,31 @@ namespace StretchRoom.Infrastructure.HttpClient;
 [PublicAPI]
 public abstract class ClientBase
 {
+    /// <summary>
+    ///     The authorization header key.
+    /// </summary>
+    public const string AuthorizationHeader = "Authorization";
+
     private readonly IFlurlClient _client;
     private readonly ILogger _logger;
+
+    private readonly Func<Task<string>>? _tokenResolver;
 
     /// <summary>
     ///     Initiates the new instance of <see cref="ClientBase" />.
     /// </summary>
     /// <param name="clientCache">The client cache.</param>
     /// <param name="baseUrlResolver">The base url resolver.</param>
+    /// <param name="tokenResolver">The token resolver.</param>
     /// <param name="loggerFactory">The logger factory.</param>
-    protected ClientBase(IFlurlClientCache clientCache, Func<string> baseUrlResolver, ILoggerFactory loggerFactory)
+    protected ClientBase(
+        IFlurlClientCache clientCache,
+        ILoggerFactory loggerFactory,
+        Func<string> baseUrlResolver,
+        Func<Task<string>>? tokenResolver = null)
     {
-        Policy = DefaultClientPollyHelper.CreateDefaultHttpPolly<IFlurlResponse>(Timeout);
+        _tokenResolver = tokenResolver;
+        Policy = DefaultClientPollyHelper.CreateDefaultHttpPolly<IFlurlResponse>();
         _client = clientCache.GetOrAdd(ClientName, baseUrlResolver.Invoke(), ConfigureClient);
         _logger = loggerFactory.CreateLogger(GetType());
     }
@@ -144,7 +157,7 @@ public abstract class ClientBase
 
         return await OperationResult<byte[], TError>.CreateFromRawResponseAsync(response);
     }
-    
+
     /// <summary>
     ///     Sends DELETE request with awaiting serialized body response.
     /// </summary>
@@ -213,7 +226,7 @@ public abstract class ClientBase
     }
 
     /// <summary>
-    ///     Sends POST request with specified stream body <br/>
+    ///     Sends POST request with specified stream body <br />
     ///     and with awaiting <typeparamref name="TResponse" /> deserialized
     ///     response.
     /// </summary>
@@ -231,14 +244,14 @@ public abstract class ClientBase
         CancellationToken token = default) where TError : class where TResponse : class
     {
         var request = PrepareRequest(url, headers);
-        
+
         request.Content = new StreamContent(body);
 
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
 
         return await OperationResult<TResponse, TError>.CreateFromResponseAsync(response);
     }
-    
+
     /// <summary>
     ///     Sends POST request with specified stream body.
     /// </summary>
@@ -255,7 +268,7 @@ public abstract class ClientBase
         CancellationToken token = default) where TError : class
     {
         var request = PrepareRequest(url, headers);
-        
+
         request.Content = new StreamContent(body);
 
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
@@ -264,7 +277,7 @@ public abstract class ClientBase
     }
 
     /// <summary>
-    ///     Sends POST request with specified serialized body <br/>
+    ///     Sends POST request with specified serialized body <br />
     ///     and with awaiting <typeparamref name="TResponse" /> deserialized
     ///     response.
     /// </summary>
@@ -290,6 +303,49 @@ public abstract class ClientBase
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
 
         return await OperationResult<TResponse, TError>.CreateFromResponseAsync(response);
+    }
+
+    /// <summary>
+    ///     Sends POST request<br />
+    ///     and with awaiting <typeparamref name="TResponse" /> deserialized
+    ///     response.
+    /// </summary>
+    /// <param name="url">The url.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <typeparam name="TResponse">The success response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TError}" />.</returns>
+    protected async Task<OperationResult<TResponse, TError>> PostJsonAsync<TResponse, TError>(
+        Action<Url> url,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class where TResponse : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
+
+        return await OperationResult<TResponse, TError>.CreateFromResponseAsync(response);
+    }
+
+    /// <summary>
+    ///     Sends POST request.
+    /// </summary>
+    /// <param name="url">The url.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TError}" />.</returns>
+    protected async Task<OperationResult<TError>> PostJsonAsync<TError>(
+        Action<Url> url,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class
+    {
+        var request = PrepareRequest(url, headers);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
+
+        return await OperationResult<TError>.CreateFromResponseAsync(response);
     }
 
     /// <summary>
@@ -398,9 +454,16 @@ public abstract class ClientBase
         return request;
     }
 
-    private static Dictionary<string, object> GetDefaultHeaders(IDictionary<string, object>? additionalHeaders = null)
+    private async Task<Dictionary<string, object>> GetDefaultHeaders(
+        IDictionary<string, object>? additionalHeaders = null)
     {
         var headers = new Dictionary<string, object>();
+        if (_tokenResolver is not null)
+        {
+            var token = await _tokenResolver.Invoke();
+            headers.Add(AuthorizationHeader, token);
+        }
+
         if (additionalHeaders == null) return headers;
         foreach (var header in additionalHeaders) headers.Add(header.Key, header.Value);
         return headers;
