@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StretchRoom.Infrastructure", "StretchRoom.Infrastructure\StretchRoom.Infrastructure.csproj", "{C8B5BFE3-0548-4F64-A318-11C9639A9357}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StretchRoom.Infrastructure.Tests", "StretchRoom.Infrastructure.Tests\StretchRoom.Infrastructure.Tests.csproj", "{16FB36A1-0953-4ED5-9C80-40BB1BFBAF3D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StretchRoom.Infrastructure.TestApplication", "StretchRoom.Infrastructure.TestApplication\StretchRoom.Infrastructure.TestApplication.csproj", "{DD574417-B3C2-44D9-AB6A-ED41E5FCB3C4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +16,13 @@ Global
 		{C8B5BFE3-0548-4F64-A318-11C9639A9357}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C8B5BFE3-0548-4F64-A318-11C9639A9357}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C8B5BFE3-0548-4F64-A318-11C9639A9357}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16FB36A1-0953-4ED5-9C80-40BB1BFBAF3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16FB36A1-0953-4ED5-9C80-40BB1BFBAF3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16FB36A1-0953-4ED5-9C80-40BB1BFBAF3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16FB36A1-0953-4ED5-9C80-40BB1BFBAF3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD574417-B3C2-44D9-AB6A-ED41E5FCB3C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD574417-B3C2-44D9-AB6A-ED41E5FCB3C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD574417-B3C2-44D9-AB6A-ED41E5FCB3C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD574417-B3C2-44D9-AB6A-ED41E5FCB3C4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

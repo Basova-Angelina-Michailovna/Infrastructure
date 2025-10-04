@@ -24,4 +24,14 @@ public class WebApplicationBase<TStartup> where TStartup : ExtraStartupBase
 
         return new ConfiguredApp(builder);
     }
+
+    /// <summary>
+    ///     Creates the new instance of <see cref="WebApplicationBase{TStartup}" />.
+    /// </summary>
+    /// <param name="args">The args.</param>
+    /// <returns>The new instance of <see cref="WebApplicationBase{TStartup}" />.</returns>
+    public static WebApplicationBase<TStartup> Create(params string[] args)
+    {
+        return new WebApplicationBase<TStartup>();
+    }
 }

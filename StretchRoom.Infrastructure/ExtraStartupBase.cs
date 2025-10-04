@@ -20,10 +20,8 @@ using StretchRoom.Infrastructure.ControllerFilters;
 using StretchRoom.Infrastructure.Extensions;
 using StretchRoom.Infrastructure.Helpers;
 using StretchRoom.Infrastructure.Interfaces;
-using StretchRoom.Infrastructure.Middlewares;
 using StretchRoom.Infrastructure.Models;
 using StretchRoom.Infrastructure.Options;
-using StretchRoom.Infrastructure.Services.ExecutedServices;
 
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -49,6 +47,11 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
     protected bool UseAuthentication { get; init; }
 
     /// <summary>
+    ///     The health check server port.
+    /// </summary>
+    protected virtual int? HealthCheckPort { get; init; }
+
+    /// <summary>
     ///     The service api info.
     /// </summary>
     protected abstract ServiceApiInfo ServiceApiInfo { get; init; }
@@ -72,6 +75,7 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             opts.Filters.Add<ApiExceptionFilter>();
             ConfigureFilters(opts.Filters);
         });
+        services.AddHttpContextAccessor();
 
         services.AddFluentValidationAutoValidation();
 
@@ -103,9 +107,8 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
         ConfigureHealthChecks(healthChecksBuilder);
 
         services.AddSingleton<ICommandExecutor, CommandExecutor>();
+        services.AddScoped<IScopedCommandExecutor, ScopedCommandExecutor>();
         ServicesConfiguration(services);
-        
-        services.ExecuteAllBeforeHostingStarted();
     }
 
     /// <summary>
@@ -123,10 +126,13 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
 
         app.UseRequestLogging();
 
-        app.UseMetricServer($"{ServiceApiInfo.BaseAddress}{RequestMetricsMiddleware.MetricsPath}");
+        app.UseMetricServer();
         app.UseHttpMetrics();
 
-        app.ConfigureHealthChecks();
+        if (HealthCheckPort is null)
+            app.ConfigureHealthChecks();
+        else
+            app.ConfigureHealthChecks(HealthCheckPort.Value);
 
         if (UseAuthentication) app.UseAuthentication();
 
@@ -138,7 +144,6 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             foreach (var apiVersion in ServiceApiInfo.ApiVersions)
                 opts.SwaggerEndpoint($"{ServiceApiInfo.BaseAddress}/swagger/{apiVersion}/swagger.json", apiVersion);
             opts.DocumentTitle = ServiceApiInfo.ServiceName;
-            opts.RoutePrefix = ServiceApiInfo.BaseAddress; //TODO: test it
             opts.DocumentTitle = ServiceApiInfo.Description;
         });
 
@@ -224,26 +229,29 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
                     Version = apiVersion
                 });
             opts.DocInclusionPredicate((docName, apiDesc) => apiDesc.GroupName == docName);
-            opts.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            if (UseAuthorization)
             {
-                Type = SecuritySchemeType.Http,
-                In = ParameterLocation.Header,
-                Name = "Authorization",
-                Scheme = "bearer",
-                BearerFormat = "jwt-bearer",
-                Description =
-                    "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
-            });
-            opts.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
+                opts.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    new OpenApiSecurityScheme
+                    Type = SecuritySchemeType.Http,
+                    In = ParameterLocation.Header,
+                    Name = "Authorization",
+                    Scheme = "bearer",
+                    BearerFormat = "jwt-bearer",
+                    Description =
+                        "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
+                });
+                opts.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
                     {
-                        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                    },
-                    Array.Empty<string>()
-                }
-            });
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            }
 
             opts.IncludeXmlComments(Assembly.GetExecutingAssembly(), true);
         });

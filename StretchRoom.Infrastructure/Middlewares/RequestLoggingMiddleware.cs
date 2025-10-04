@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Reflection;
+using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Logging;
@@ -14,6 +14,11 @@ namespace StretchRoom.Infrastructure.Middlewares;
 /// <param name="logger">The logger.</param>
 public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
 {
+    private readonly string[] _noLoggingPaths =
+    [
+        "/swagger/",
+        "/metrics"
+    ];
     /// <summary>
     ///     Invokes the context.
     /// </summary>
@@ -21,59 +26,121 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
     public async Task InvokeAsync(HttpContext context)
     {
         var endpoint = context.GetEndpoint();
-        var noRequestLogging = endpoint?.RequestDelegate?.Method.GetCustomAttribute<NoRequestBodyLoggingAttribute>();
-        var noResponseLogging = endpoint?.RequestDelegate?.Method.GetCustomAttribute<NoResponseBodyLoggingAttribute>();
-        var stopwatch = Stopwatch.StartNew();
-        var request = context.Request;
 
-        await LogRequestAsync(request, context.TraceIdentifier, noRequestLogging);
+        var noRequestLogging = endpoint?.Metadata.GetMetadata<NoRequestBodyLoggingAttribute>();
+        var noResponseLogging = endpoint?.Metadata.GetMetadata<NoResponseBodyLoggingAttribute>();
+        var stopwatch = Stopwatch.StartNew();
+        await LogRequest(context, noRequestLogging);
+
+        var originalBodyStream = context.Response.Body;
+        using var responseBody = new MemoryStream();
+        context.Response.Body = responseBody;
 
         try
         {
-            await next.Invoke(context);
+            await next(context);
         }
         finally
         {
-            var response = context.Response;
-
             stopwatch.Stop();
-            await LogResponseAsync(response, context.TraceIdentifier, stopwatch.Elapsed, noResponseLogging);
+            await LogResponse(context, responseBody, originalBodyStream, stopwatch.Elapsed, noResponseLogging);
         }
     }
 
-    private async Task LogRequestAsync(HttpRequest request, string traceIdentifier,
-        NoRequestBodyLoggingAttribute? noRequestLogging)
+    private async Task LogRequest(HttpContext context, NoRequestBodyLoggingAttribute? bodyLoggingAttribute)
     {
-        if (logger.IsEnabled(LogLevel.Debug))
-        {
-            var body = noRequestLogging is null
-                ? await new StreamReader(request.Body).ReadToEndAsync()
-                : "NO-LOGGING";
-            logger.LogDebug("Request ==> {path} | id: {correlationId} | body: {body}", request.GetDisplayUrl(),
-                traceIdentifier,
-                body);
-        }
-        else
-        {
-            logger.LogInformation("Request ==> {path} | id: {correlationId}", request.GetDisplayUrl(), traceIdentifier);
-        }
+        context.Request.EnableBuffering();
+
+        var request = context.Request;
+        var shouldLog = ShouldLogRequestBody(context.Request, bodyLoggingAttribute);
+        var requestBody = shouldLog ? await ReadRequestBody(request) : "NO-LOGGING";
+
+        logger.LogInformation("REQUEST({trace}) ==> {Method} {Path} {QueryString} {RequestBody}",
+            context.TraceIdentifier,
+            request.Method,
+            request.GetDisplayUrl(),
+            request.QueryString,
+            requestBody);
+
+        request.Body.Position = 0;
     }
 
-    private async Task LogResponseAsync(HttpResponse response, string traceIdentifier, TimeSpan duration,
-        NoResponseBodyLoggingAttribute? noResponseLogging)
+    private async Task LogResponse(HttpContext context, MemoryStream responseBody, Stream originalBodyStream,
+        TimeSpan duration, NoResponseBodyLoggingAttribute? bodyLoggingAttribute)
     {
-        if (logger.IsEnabled(LogLevel.Debug))
+        var shouldLog = ShouldLogResponseBody(context.Response, bodyLoggingAttribute);
+        responseBody.Seek(0, SeekOrigin.Begin);
+        var responseText = shouldLog ? await new StreamReader(responseBody).ReadToEndAsync() : "NO-LOGGING";
+        responseBody.Seek(0, SeekOrigin.Begin);
+
+        logger.LogInformation("<== RESPONSE({trace}): {StatusCode} {Path} {ContentType} {ResponseBody} {duration} ms",
+            context.TraceIdentifier,
+            context.Response.StatusCode,
+            context.Request.GetDisplayUrl(),
+            context.Response.ContentType,
+            responseText,
+            duration.Milliseconds);
+
+        await responseBody.CopyToAsync(originalBodyStream);
+    }
+
+    private bool ShouldLogResponseBody(HttpResponse response, NoResponseBodyLoggingAttribute? bodyLoggingAttribute)
+    {
+        var contentType = response.ContentType?.ToLower() ?? "";
+
+        var path = response.HttpContext.Request.Path.HasValue ? response.HttpContext.Request.Path.Value : string.Empty;
+        var isInNoLogsList = _noLoggingPaths.Aggregate(false, (current, noLoggingPath) => current | path.Contains(noLoggingPath));
+
+        return !isInNoLogsList 
+               && bodyLoggingAttribute is null
+               && ShouldLog()
+               && (contentType.Contains("text/") ||
+                   contentType.Contains("application/json") ||
+                   contentType.Contains("application/xml"));
+    }
+
+    private bool ShouldLogRequestBody(HttpRequest request, NoRequestBodyLoggingAttribute? bodyLoggingAttribute)
+    {
+        var contentType = request.ContentType?.ToLower() ?? "";
+        
+        var path = request.Path.HasValue ? request.Path.Value : string.Empty;
+        var isInNoLogsList = _noLoggingPaths.Aggregate(false, (current, noLoggingPath) => current | path.Contains(noLoggingPath));
+
+        return !isInNoLogsList 
+               && bodyLoggingAttribute is null
+               && ShouldLog()
+               && (contentType.Contains("text/") ||
+                   contentType.Contains("application/json") ||
+                   contentType.Contains("application/xml"));
+    }
+
+    private bool ShouldLog()
+    {
+        return logger.IsEnabled(LogLevel.Debug);
+    }
+
+    private async Task<string> ReadRequestBody(HttpRequest request)
+    {
+        if (request.ContentLength is null or 0)
+            return string.Empty;
+
+        try
         {
-            var body = noResponseLogging is null
-                ? await new StreamReader(response.Body).ReadToEndAsync()
-                : "NO-LOGGING";
-            logger.LogDebug("Response <== {path} | id: {correlationId} | duration: {duration} | body: {body}",
-                response.HttpContext.Request.GetDisplayUrl(), traceIdentifier, duration, body);
+            using var reader = new StreamReader(
+                request.Body,
+                Encoding.UTF8,
+                false,
+                1024,
+                true);
+
+            var body = await reader.ReadToEndAsync();
+            request.Body.Position = 0;
+            return body;
         }
-        else
+        catch (Exception ex)
         {
-            logger.LogInformation("Response <== {path} | id: {correlationId} | duration: {duration}",
-                response.HttpContext.Request.GetDisplayUrl(), traceIdentifier, duration);
+            logger.LogWarning(ex, "Failed to read request body");
+            return "[Error reading request body]";
         }
     }
 }

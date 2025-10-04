@@ -1,5 +1,6 @@
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Hosting;
+using StretchRoom.Infrastructure.Services.ExecutedServices;
 
 namespace StretchRoom.Infrastructure;
 
@@ -15,8 +16,10 @@ public sealed class ConfiguredApp(IWebHostBuilder builder)
     /// </summary>
     /// <param name="token">The cancellation token.</param>
     /// <returns>The <see cref="Task" /> that represents app running instance.</returns>
-    public Task BuildAndRunAsync(CancellationToken token = default)
+    public async Task BuildAndRunAsync(CancellationToken token = default)
     {
-        return builder.Build().RunAsync(token);
+        var app = builder.Build();
+        await app.Services.ExecuteAllBeforeHostingStarted(token);
+        await app.RunAsync(token);
     }
 }

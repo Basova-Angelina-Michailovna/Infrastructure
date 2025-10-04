@@ -1,6 +1,8 @@
+using FluentValidation;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using StretchRoom.Infrastructure.Services.ExecutedServices;
 
 namespace StretchRoom.Infrastructure.DatabaseRegistration;
 
@@ -23,19 +25,26 @@ public static class DbContextRegistrationExtensions
     {
         var options = new DbContextRegistrationOptions();
         registrationOptions(options);
-        services.AddDbContextFactory<TDbContext>(opts
-            => opts.UseNpgsql(options.ConnectionString, builder =>
+
+        var validator = new DbContextRegistrationOptionsValidator();
+        validator.ValidateAndThrow(options);
+
+        services.AddOptions<DbContextRegistrationOptions>().Configure(registrationOptions);
+
+        services.AddDbContextFactory<TDbContext>(OptionsAction);
+        //services.AddDbContext<TDbContext>(OptionsAction);
+        services.AddBeforeHostingStarted<MigrationApplierService<TDbContext>>();
+        return;
+
+        void OptionsAction(DbContextOptionsBuilder opts)
+        {
+            opts.UseNpgsql(options.ConnectionString, builder =>
             {
                 if (options.Retries is not null) builder.EnableRetryOnFailure(options.Retries.Value);
 
                 if (options.Timeout is not null) builder.CommandTimeout(options.Timeout.Value.Seconds);
-            }));
-
-        if (!options.MigrateDb) return;
-
-        using var sp = services.BuildServiceProvider();
-        using var dbContext = sp.GetRequiredService<IDbContextFactory<TDbContext>>().CreateDbContext();
-        if (dbContext.Database.GetPendingMigrations().Any()) dbContext.Database.Migrate();
+            });
+        }
     }
 }
 
@@ -48,20 +57,29 @@ public sealed record DbContextRegistrationOptions
     /// <summary>
     ///     Indicates that migrations should be applied on service startup.
     /// </summary>
-    public bool MigrateDb { get; init; }
+    public bool MigrateDb { get; set; }
 
     /// <summary>
     ///     The timeout. Set <c>null</c> if you want default.
     /// </summary>
-    public TimeSpan? Timeout { get; init; }
+    public TimeSpan? Timeout { get; set; }
 
     /// <summary>
     ///     The retries num. Set <c>null</c> if you want default.
     /// </summary>
-    public byte? Retries { get; init; }
+    public byte? Retries { get; set; }
 
     /// <summary>
     ///     The database connection string.
     /// </summary>
-    public string? ConnectionString { get; init; }
+    public string? ConnectionString { get; set; }
+}
+
+internal class DbContextRegistrationOptionsValidator : AbstractValidator<DbContextRegistrationOptions>
+{
+    public DbContextRegistrationOptionsValidator()
+    {
+        RuleFor(it => it).NotNull();
+        RuleFor(it => it.ConnectionString).NotEmpty();
+    }
 }

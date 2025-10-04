@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using StretchRoom.Infrastructure.HttpClient.TokenManager;
 
 namespace StretchRoom.Infrastructure.HttpClient.ClientRegistration;
 
@@ -44,6 +45,7 @@ public class ClientBaseRegistrationRegistrator<TInterface, TImplementation>(ISer
     private Func<string>? _baseUrlResolver;
     private Func<IServiceProvider, IFlurlClientCache>? _flurlClientCacheResolver;
     private Func<Task<string>>? _tokenResolver;
+    private bool _useClientTokenManager;
 
     /// <summary>
     ///     Configures the url for client from string.
@@ -87,6 +89,13 @@ public class ClientBaseRegistrationRegistrator<TInterface, TImplementation>(ISer
         return this;
     }
 
+    public ClientBaseRegistrationRegistrator<TInterface, TImplementation> AddAuthTokenFromHttpContextResolver()
+    {
+        services.TryAddSingleton<IClientTokenManager<TInterface>, FromContextClientTokenManager<TInterface>>();
+        _useClientTokenManager = true;
+        return this;
+    }
+
     /// <summary>
     ///     Configures <see cref="IFlurlClientCache" />. If it wasn't configured the default implementation will be used.
     /// </summary>
@@ -119,9 +128,25 @@ public class ClientBaseRegistrationRegistrator<TInterface, TImplementation>(ISer
             return;
         }
 
-        // TODO: add option to forward auth header from incoming request to client request. See IHttpContextAccessor
         services.AddSingleton<TInterface, TImplementation>(sp =>
-            ActivatorUtilities.CreateInstance<TImplementation>(sp, _baseUrlResolver));
+        {
+            if (_tokenResolver is not null)
+                return ActivatorUtilities.CreateInstance<TImplementation>(sp, _baseUrlResolver, _tokenResolver);
+            if (_useClientTokenManager)
+                return ActivatorUtilities.CreateInstance<TImplementation>(sp, _baseUrlResolver,
+                    GetTokenResolverWithTokenManager(sp));
+            return ActivatorUtilities.CreateInstance<TImplementation>(sp, _baseUrlResolver);
+        });
+    }
+
+    private static Func<Task<string>> GetTokenResolverWithTokenManager(IServiceProvider sp)
+    {
+        return () =>
+        {
+            var manager = sp.GetRequiredService<IClientTokenManager<TInterface>>();
+            var token = manager.GetToken() ?? string.Empty;
+            return Task.FromResult(token);
+        };
     }
 }
 
