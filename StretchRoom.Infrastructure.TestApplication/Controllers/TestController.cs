@@ -43,7 +43,7 @@ public class TestController : ControllerBase
 
     [HttpPost("command")]
     public async Task<IActionResult> ExecuteCommand(
-        [Required, FromQuery] string name,
+        [Required] [FromQuery] string name,
         [FromServices] IScopedCommandExecutor commandExecutor,
         CancellationToken token)
     {

@@ -7,11 +7,12 @@ namespace StretchRoom.Infrastructure.TestApplication.Commands;
 // Registration in DI example:
 // services.AddScopedCommand<GetEntitiesCommand, GetEntitiesCommandContext, GetEntitiesCommandResult>();
 
-public record GetEntitiesCommandContext();
+public record GetEntitiesCommandContext;
 
 public record GetEntitiesCommandResult(IReadOnlyCollection<TestTableDbo> Dbos);
 
-public class GetEntitiesCommand(IDbContextFactory<DataModelContext> dbFactory) : ICommand<GetEntitiesCommandContext, GetEntitiesCommandResult>
+public class GetEntitiesCommand(IDbContextFactory<DataModelContext> dbFactory)
+    : ICommand<GetEntitiesCommandContext, GetEntitiesCommandResult>
 {
     public async Task<GetEntitiesCommandResult> ExecuteAsync(GetEntitiesCommandContext context,
         CancellationToken token = default)
@@ -19,7 +20,7 @@ public class GetEntitiesCommand(IDbContextFactory<DataModelContext> dbFactory) :
         await using var dbContext = await dbFactory.CreateDbContextAsync(token);
 
         var result = await dbContext.TestTable.AsNoTracking().ToArrayAsync(token);
-        
+
         return new GetEntitiesCommandResult(result);
     }
 }

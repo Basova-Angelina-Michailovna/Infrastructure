@@ -1,6 +1,5 @@
 using StretchRoom.Infrastructure.DatabaseRegistration;
 using StretchRoom.Infrastructure.Extensions;
-using StretchRoom.Infrastructure.Interfaces;
 using StretchRoom.Infrastructure.Models;
 using StretchRoom.Infrastructure.TestApplication.Commands;
 using StretchRoom.Infrastructure.TestApplication.DaL;

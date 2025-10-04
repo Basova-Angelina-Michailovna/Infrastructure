@@ -14,11 +14,21 @@ namespace StretchRoom.Infrastructure.Middlewares;
 /// <param name="logger">The logger.</param>
 public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
 {
+    private const LogLevel LogLevelToLogBodies = LogLevel.Debug;
+
+    private readonly string[] _loggingContentTypes =
+    [
+        "text/",
+        "application/json",
+        "application/xml"
+    ];
+
     private readonly string[] _noLoggingPaths =
     [
         "/swagger/",
         "/metrics"
     ];
+
     /// <summary>
     ///     Invokes the context.
     /// </summary>
@@ -88,35 +98,42 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
     {
         var contentType = response.ContentType?.ToLower() ?? "";
 
-        var path = response.HttpContext.Request.Path.HasValue ? response.HttpContext.Request.Path.Value : string.Empty;
-        var isInNoLogsList = _noLoggingPaths.Aggregate(false, (current, noLoggingPath) => current | path.Contains(noLoggingPath));
+        var isInNoLogsList = IsInNoLogsList(response.HttpContext.Request.Path);
 
-        return !isInNoLogsList 
+        return !isInNoLogsList
                && bodyLoggingAttribute is null
-               && ShouldLog()
-               && (contentType.Contains("text/") ||
-                   contentType.Contains("application/json") ||
-                   contentType.Contains("application/xml"));
+               && IsCorrectLogLevel()
+               && IsCorrectContentType(contentType);
     }
 
     private bool ShouldLogRequestBody(HttpRequest request, NoRequestBodyLoggingAttribute? bodyLoggingAttribute)
     {
         var contentType = request.ContentType?.ToLower() ?? "";
-        
-        var path = request.Path.HasValue ? request.Path.Value : string.Empty;
-        var isInNoLogsList = _noLoggingPaths.Aggregate(false, (current, noLoggingPath) => current | path.Contains(noLoggingPath));
 
-        return !isInNoLogsList 
+        var isInNoLogsList = IsInNoLogsList(request.Path);
+
+        return !isInNoLogsList
                && bodyLoggingAttribute is null
-               && ShouldLog()
-               && (contentType.Contains("text/") ||
-                   contentType.Contains("application/json") ||
-                   contentType.Contains("application/xml"));
+               && IsCorrectLogLevel()
+               && IsCorrectContentType(contentType);
     }
 
-    private bool ShouldLog()
+    private bool IsInNoLogsList(PathString path)
     {
-        return logger.IsEnabled(LogLevel.Debug);
+        var pathString = path.HasValue ? path.Value : string.Empty;
+        return _noLoggingPaths.Aggregate(false,
+            (current, noLoggingPath) => current | pathString.Contains(noLoggingPath));
+    }
+
+    private bool IsCorrectContentType(string contentType)
+    {
+        return _loggingContentTypes.Aggregate(false,
+            (current, contentTypes) => current | contentType.Contains(contentTypes));
+    }
+
+    private bool IsCorrectLogLevel()
+    {
+        return logger.IsEnabled(LogLevelToLogBodies);
     }
 
     private async Task<string> ReadRequestBody(HttpRequest request)
