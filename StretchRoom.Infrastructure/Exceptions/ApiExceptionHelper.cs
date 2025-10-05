@@ -139,4 +139,47 @@ public static class ApiExceptionHelper
     {
         throw new ApiException(statusCode, exception, memberName);
     }
+
+    /// <summary>
+    ///     Throws the api exception.
+    /// </summary>
+    /// <param name="problemDetails">The problem details.</param>
+    /// <param name="statusCode">The status code.</param>
+    /// <param name="memberName">The member name.</param>
+    /// <typeparam name="TResult"></typeparam>
+    /// <returns></returns>
+    /// <exception cref="ApiException"></exception>
+    public static TResult ThrowApiException<TResult>(ProblemDetails? problemDetails, int? statusCode = null,
+        [CallerMemberName] string memberName = "")
+    {
+        ThrowApiException(problemDetails, statusCode, memberName);
+        return default!;
+    }
+
+    /// <summary>
+    ///     Throws the api exception.
+    /// </summary>
+    /// <param name="problemDetails">The problem details.</param>
+    /// <param name="statusCode">The status code.</param>
+    /// <param name="memberName">The member name.</param>
+    /// <returns></returns>
+    /// <exception cref="ApiException"></exception>
+    public static void ThrowApiException(ProblemDetails? problemDetails, int? statusCode = null,
+        [CallerMemberName] string memberName = "")
+    {
+        statusCode ??= problemDetails?.Status ?? -1;
+        if (problemDetails is null)
+        {
+            problemDetails ??= new ProblemDetails
+            {
+                Status = statusCode,
+                Title = "API Error",
+                Detail = "Null problem details",
+                Instance = memberName
+            };
+            throw new ApiException(problemDetails, "Null problem details");
+        }
+
+        throw new ApiException(problemDetails, problemDetails.Title ?? "Problem details");
+    }
 }

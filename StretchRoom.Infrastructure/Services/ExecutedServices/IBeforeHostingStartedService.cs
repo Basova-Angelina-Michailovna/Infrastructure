@@ -41,7 +41,7 @@ public static class BeforeHostingStartedServiceExtensions
     /// </summary>
     /// <param name="services">The services.</param>
     /// <param name="token">The cancellation token.</param>
-    internal static async Task ExecuteAllBeforeHostingStarted(this IServiceProvider services,
+    public static async Task ExecuteAllBeforeHostingStarted(this IServiceProvider services,
         CancellationToken token = default)
     {
         var beforeHostingStartedServices = services.GetServices<IBeforeHostingStartedService>();

@@ -89,6 +89,13 @@ public class ClientBaseRegistrationRegistrator<TInterface, TImplementation>(ISer
         return this;
     }
 
+    /// <summary>
+    ///     Adds the <see cref="IClientTokenManager{TInterface}" /> with <typeparamref name="TInterface" /> type to service
+    ///     collection. <br />
+    ///     It uses for access to auth token from http context. See default implementation (could be overwritten).
+    ///     <seealso cref="FromContextClientTokenManager{TInterface}" />
+    /// </summary>
+    /// <returns></returns>
     public ClientBaseRegistrationRegistrator<TInterface, TImplementation> AddAuthTokenFromHttpContextResolver()
     {
         services.TryAddSingleton<IClientTokenManager<TInterface>, FromContextClientTokenManager<TInterface>>();

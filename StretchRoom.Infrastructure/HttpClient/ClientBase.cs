@@ -40,14 +40,14 @@ public abstract class ClientBase
     {
         _tokenResolver = tokenResolver;
         Policy = DefaultClientPollyHelper.CreateDefaultHttpPolly<IFlurlResponse>();
-        _client = clientCache.GetOrAdd(ClientName, baseUrlResolver.Invoke(), ConfigureClient);
+        _client = clientCache.GetOrAdd(ClientName, baseUrlResolver(), ConfigureClient);
         _logger = loggerFactory.CreateLogger(GetType());
     }
 
     /// <summary>
     ///     The client name to get it from <see cref="IFlurlClientCache" />.
     /// </summary>
-    protected string ClientName => GetClientName();
+    protected string ClientName => GetClientName(GetType());
 
     /// <summary>
     ///     The default response awaiting timeout.
@@ -71,9 +71,14 @@ public abstract class ClientBase
         obj.WithSettings(act => { act.JsonSerializer = DefaultSerializer; });
     }
 
-    private string GetClientName()
+    /// <summary>
+    /// Gets the client name. With this name the client will get from <see cref="IFlurlClientCache"/>.
+    /// </summary>
+    /// <param name="implementationType">The client implementation type.</param>
+    /// <returns></returns>
+    public static string GetClientName(Type implementationType)
     {
-        return $"{GetType().Name}{nameof(ClientBase)}";
+        return $"{implementationType.Name}{nameof(ClientBase)}";
     }
 
     /// <summary>
@@ -90,7 +95,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TResponse : class where TError : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Get, token: token);
 
@@ -110,7 +115,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Get, token: token);
 
@@ -130,7 +135,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var response =
             await ExecuteWithPolicyAsync(request, HttpMethod.Get, HttpCompletionOption.ResponseHeadersRead, token);
@@ -151,7 +156,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Get, token: token);
 
@@ -172,7 +177,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TResponse : class where TError : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Delete, token: token);
 
@@ -192,7 +197,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Delete, token: token);
 
@@ -215,7 +220,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var serializedBody = DefaultSerializer.Serialize(body);
         request.Content = new CapturedJsonContent(serializedBody);
@@ -243,7 +248,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class where TResponse : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         request.Content = new StreamContent(body);
 
@@ -267,7 +272,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         request.Content = new StreamContent(body);
 
@@ -295,7 +300,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class where TResponse : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var serializedBody = DefaultSerializer.Serialize(body);
         request.Content = new CapturedJsonContent(serializedBody);
@@ -321,7 +326,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class where TResponse : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
 
@@ -341,7 +346,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
 
@@ -364,7 +369,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var serializedBody = DefaultSerializer.Serialize(body);
         request.Content = new CapturedJsonContent(serializedBody);
@@ -392,7 +397,7 @@ public abstract class ClientBase
         IDictionary<string, object>? headers = null,
         CancellationToken token = default) where TError : class where TResponse : class
     {
-        var request = PrepareRequest(url, headers);
+        var request = await PrepareRequest(url, headers);
 
         var serializedBody = DefaultSerializer.Serialize(body);
         request.Content = new CapturedJsonContent(serializedBody);
@@ -446,11 +451,16 @@ public abstract class ClientBase
         return func.Invoke(request, token);
     }
 
-    private IFlurlRequest PrepareRequest(Action<Url> url, IDictionary<string, object>? headers)
+    private async Task<IFlurlRequest> PrepareRequest(Action<Url> url, IDictionary<string, object>? headers)
     {
-        var requestHeaders = GetDefaultHeaders(headers);
+        var requestHeaders = await GetDefaultHeaders(headers);
         var request = _client.Request().WithHeaders(requestHeaders);
         url.Invoke(request.Url);
+        //var uri = new Url(_client.BaseUrl);
+        //url.Invoke(uri);
+        //var req = new FlurlRequest(uri).WithHeaders(requestHeaders);
+        //req.Client = _client;
+        //url.Invoke(request.Url);
         return request;
     }
 
