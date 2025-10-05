@@ -167,7 +167,7 @@ public static class ApiExceptionHelper
     public static void ThrowApiException(ProblemDetails? problemDetails, int? statusCode = null,
         [CallerMemberName] string memberName = "")
     {
-        statusCode ??= problemDetails?.Status ?? -1;
+        statusCode ??= problemDetails?.Status ?? StatusCodes.Status500InternalServerError;
         if (problemDetails is null)
         {
             problemDetails ??= new ProblemDetails
@@ -179,6 +179,7 @@ public static class ApiExceptionHelper
             };
             throw new ApiException(problemDetails, "Null problem details");
         }
+        problemDetails.Instance = memberName;
 
         throw new ApiException(problemDetails, problemDetails.Title ?? "Problem details");
     }
