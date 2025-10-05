@@ -247,4 +247,83 @@ public class SrRandomizer(int seed = 0)
     {
         return Array((_, rand) => rand.Decimal(), length);
     }
+
+    /// <summary>
+    ///     Gets the random datetime.
+    /// </summary>
+    /// <returns>The random datetime.</returns>
+    public DateTime DateTime()
+    {
+        return DateTime(System.DateTime.UnixEpoch);
+    }
+
+    /// <summary>
+    ///     Gets the random datetime.
+    /// </summary>
+    /// <returns>The random datetime.</returns>
+    public DateTime DateTime(DateTime minValue)
+    {
+        return DateTime(minValue, System.DateTime.MaxValue);
+    }
+
+    /// <summary>
+    ///     Gets the random datetime.
+    /// </summary>
+    /// <returns>The random datetime.</returns>
+    public DateTime DateTime(DateTime minValue, DateTime maxValue)
+    {
+        var year = Int(0, maxValue.Year + 1);
+        var month = Int(0, maxValue.Month + 1);
+        var day = Int(0, maxValue.Day + 1);
+        var hour = Int(0, maxValue.Hour + 1);
+        var minute = Int(0, maxValue.Minute);
+        var second = Int(0, maxValue.Second);
+        return minValue
+            .AddYears(year)
+            .AddMonths(month)
+            .AddDays(day)
+            .AddHours(hour)
+            .AddMinutes(minute)
+            .AddSeconds(second);
+    }
+
+    /// <summary>
+    ///     Gets the random DateTimeOffset.
+    /// </summary>
+    /// <returns>The random DateTimeOffset.</returns>
+    public DateTimeOffset DateTimeOffset()
+    {
+        return DateTimeOffset(System.DateTime.UnixEpoch);
+    }
+
+    /// <summary>
+    ///     Gets the random DateTimeOffset.
+    /// </summary>
+    /// <returns>The random DateTimeOffset.</returns>
+    public DateTimeOffset DateTimeOffset(DateTimeOffset minValue)
+    {
+        return DateTimeOffset(minValue, System.DateTime.MaxValue);
+    }
+
+    /// <summary>
+    ///     Gets the random DateTimeOffset.
+    /// </summary>
+    /// <returns>The random DateTimeOffset.</returns>
+    public DateTimeOffset DateTimeOffset(DateTimeOffset minValue, DateTimeOffset maxValue)
+    {
+        var year = Int(0, maxValue.Year + 1);
+        var month = Int(0, maxValue.Month + 1);
+        var day = Int(0, maxValue.Day + 1);
+        var hour = Int(0, maxValue.Hour + 1);
+        var minute = Int(0, maxValue.Minute);
+        var second = Int(0, maxValue.Second);
+        return minValue
+            .AddYears(year)
+            .AddMonths(month)
+            .AddDays(day)
+            .AddHours(hour)
+            .AddMinutes(minute)
+            .AddSeconds(second)
+            .ToOffset(TimeSpan.FromHours(Int(-12, 13)));
+    }
 }

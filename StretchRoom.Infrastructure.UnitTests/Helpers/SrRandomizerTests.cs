@@ -75,6 +75,41 @@ public class SrRandomizerTests
             .BeLessThanOrEqualTo(max);
     }
 
+    [TestCaseSource(nameof(GetTestDates))]
+    public void When_RandomDateTime_With_SpecifiedLimits_Result_ValueInRange(DateTime min, DateTime max)
+    {
+        var val = _randomizer.DateTime(min, max);
+        val.Should()
+            .BeOnOrAfter(min)
+            .And
+            .BeOnOrBefore(max);
+    }
+
+    private static IEnumerable<TestCaseData<DateTime, DateTime>> GetTestDates()
+    {
+        yield return new TestCaseData<DateTime, DateTime>(DateTime.UnixEpoch, DateTime.MaxValue);
+        yield return new TestCaseData<DateTime, DateTime>(new DateTime(1999, 11, 23),
+            new DateTime(2452, 6, 5, 10, 42, 12));
+    }
+
+    [TestCaseSource(nameof(GetTestOffsetDates))]
+    public void When_RandomDateTimeOffset_With_SpecifiedLimits_Result_ValueInRange(DateTimeOffset min,
+        DateTimeOffset max)
+    {
+        var val = _randomizer.DateTimeOffset(min, max);
+        val.Should()
+            .BeOnOrAfter(min)
+            .And
+            .BeOnOrBefore(max);
+    }
+
+    private static IEnumerable<TestCaseData<DateTimeOffset, DateTimeOffset>> GetTestOffsetDates()
+    {
+        yield return new TestCaseData<DateTimeOffset, DateTimeOffset>(DateTimeOffset.UnixEpoch, DateTimeOffset.MaxValue);
+        yield return new TestCaseData<DateTimeOffset, DateTimeOffset>(new DateTime(1999, 11, 23),
+            new DateTime(2452, 6, 5, 10, 42, 12));
+    }
+
     [TestCase(50U)]
     public void When_RandomStringArray_With_SpecifiedNumOfAttempts_Result_ExpectedLength(uint num)
     {
