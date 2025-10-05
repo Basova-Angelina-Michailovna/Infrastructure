@@ -72,7 +72,7 @@ public abstract class ClientBase
     }
 
     /// <summary>
-    /// Gets the client name. With this name the client will get from <see cref="IFlurlClientCache"/>.
+    ///     Gets the client name. With this name the client will get from <see cref="IFlurlClientCache" />.
     /// </summary>
     /// <param name="implementationType">The client implementation type.</param>
     /// <returns></returns>

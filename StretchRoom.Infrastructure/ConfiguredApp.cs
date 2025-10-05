@@ -6,7 +6,7 @@ using StretchRoom.Infrastructure.Services.ExecutedServices;
 namespace StretchRoom.Infrastructure;
 
 /// <summary>
-///     The <see cref="ConfiguredApp"/> class.
+///     The <see cref="ConfiguredApp" /> class.
 /// </summary>
 /// <param name="builder">The web host builder.</param>
 [PublicAPI]
@@ -46,7 +46,7 @@ public sealed class ConfiguredApp(IWebHostBuilder builder) : IDisposable, IAsync
         _app = builder.Build();
 
         await _app.Services.ExecuteAllBeforeHostingStarted(token);
-        
+
         await _app.RunAsync(token);
     }
 }

@@ -22,11 +22,8 @@ public class TestClient(
     {
         var result = await GetAsync<ProblemDetails>(
             url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.GetOk), token: token);
-        
-        if (!result.IsSuccess)
-        {
-            ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
-        }
+
+        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
     }
 
     public async Task GetExceptionAsync(CancellationToken token)
@@ -35,10 +32,7 @@ public class TestClient(
             url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.GetException),
             token: token);
 
-        if (!result.IsSuccess)
-        {
-            ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
-        }
+        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
     }
 
     public async Task<SomeBodyResponse> PostBodyAsync(SomeBodyRequest body, CancellationToken token)
