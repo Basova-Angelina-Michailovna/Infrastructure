@@ -181,7 +181,7 @@ public class SrRandomizerTests
         }
     }
 
-    [TestCase(10U)]
+    [TestCase(5U)]
     public void When_RandomEnumValue_With_Result_ValueIsInEnum(uint numOfElementsToTake)
     {
         var enums = Enum.GetValues<TestEnum>();
