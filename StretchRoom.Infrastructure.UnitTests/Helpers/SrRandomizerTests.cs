@@ -105,7 +105,8 @@ public class SrRandomizerTests
 
     private static IEnumerable<TestCaseData<DateTimeOffset, DateTimeOffset>> GetTestOffsetDates()
     {
-        yield return new TestCaseData<DateTimeOffset, DateTimeOffset>(DateTimeOffset.UnixEpoch, DateTimeOffset.MaxValue);
+        yield return
+            new TestCaseData<DateTimeOffset, DateTimeOffset>(DateTimeOffset.UnixEpoch, DateTimeOffset.MaxValue);
         yield return new TestCaseData<DateTimeOffset, DateTimeOffset>(new DateTime(1999, 11, 23),
             new DateTime(2452, 6, 5, 10, 42, 12));
     }
@@ -137,4 +138,69 @@ public class SrRandomizerTests
         array.Length.Should().Be((int)arrayLength);
         array.Aggregate(true, (b, i) => b & (i != null)).Should().BeTrue();
     }
+
+    [TestCase(10U, 5U)]
+    [TestCase(10U, 11U)]
+    public void When_RandomElementsOfCollection_With_SpecifiedCollectionLimits_Result_SpecifiedNumOfElementsWereTaken(
+        uint length, uint toTake)
+    {
+        var randomArray = _randomizer.IntArray(length);
+
+        var act = () => _randomizer.RandomElements(randomArray, toTake);
+        if (toTake > length)
+        {
+            act.Should().Throw<ArgumentOutOfRangeException>();
+            return;
+        }
+
+        var elements = act().ToArray();
+        randomArray.Should().Contain(elements);
+        elements.Should().HaveCount((int)toTake);
+    }
+
+    [TestCase(10U)]
+    [TestCase(100U)]
+    public void When_RandomElementOfCollection_With_SpecifiedCollectionLimits_Result_ElementFromCollection(uint length)
+    {
+        var randomArray = _randomizer.IntArray(length);
+
+        var element = _randomizer.RandomElement(randomArray);
+
+        randomArray.Should().Contain(element);
+    }
+
+    [TestCase(10)]
+    [TestCase(100)]
+    public void When_RandomEnumValue_With_SpecifiedNumOfIterations_Result_ValueIsInEnum(int numOfIterations)
+    {
+        for (var i = 0; i < numOfIterations; i++)
+        {
+            var val = _randomizer.Enum<TestEnum>();
+
+            Enum.IsDefined(val).Should().BeTrue();
+        }
+    }
+
+    [TestCase(10U)]
+    public void When_RandomEnumValue_With_Result_ValueIsInEnum(uint numOfElementsToTake)
+    {
+        var enums = Enum.GetValues<TestEnum>();
+
+        var val = _randomizer.Enums<TestEnum>(numOfElementsToTake);
+
+        enums.Should().Contain(val);
+    }
+}
+
+public enum TestEnum
+{
+    One = 1,
+    Two = 2,
+    Three = 3,
+    Four = 4,
+    Five = 5,
+    Six = 6,
+    Seven = 7,
+    Eight = 8,
+    Nine = 9
 }

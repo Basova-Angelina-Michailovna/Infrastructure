@@ -179,6 +179,7 @@ public static class ApiExceptionHelper
             };
             throw new ApiException(problemDetails, "Null problem details");
         }
+
         problemDetails.Instance = memberName;
 
         throw new ApiException(problemDetails, problemDetails.Title ?? "Problem details");

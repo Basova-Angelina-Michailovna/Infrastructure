@@ -42,4 +42,24 @@ public static class SrObjectExtensions
         var json = JsonSerializer.Serialize(obj, DefaultJsonOptions);
         return json;
     }
+
+    /// <summary>
+    ///     Casts the <paramref name="value" /> to <see cref="uint" /> value.
+    /// </summary>
+    /// <param name="value">The value to cast.</param>
+    /// <returns>The value of <see cref="uint" />.</returns>
+    public static uint ToUInt(this int value)
+    {
+        return (uint)value;
+    }
+
+    /// <summary>
+    ///     Casts the <paramref name="value" /> to <see cref="ulong" /> value.
+    /// </summary>
+    /// <param name="value">The value to cast.</param>
+    /// <returns>The value of <see cref="ulong" />.</returns>
+    public static ulong ToULong(this long value)
+    {
+        return (ulong)value;
+    }
 }

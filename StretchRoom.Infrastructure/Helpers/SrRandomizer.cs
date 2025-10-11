@@ -326,4 +326,60 @@ public class SrRandomizer(int seed = 0)
             .AddSeconds(second)
             .ToOffset(TimeSpan.FromHours(Int(-12, 13)));
     }
+
+    /// <summary>
+    ///     Gets the random element of collection.
+    /// </summary>
+    /// <param name="elements">The elements.</param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public T RandomElement<T>(IEnumerable<T> elements)
+    {
+        return RandomElements(elements, 1).First();
+    }
+
+    /// <summary>
+    ///     Gets the random elements from collection.
+    /// </summary>
+    /// <param name="elements">The elements.</param>
+    /// <param name="count">The result collection length.</param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns>The new instance of <typeparamref name="T" /> collection.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///     Throw if <paramref name="count" /> is greater then
+    ///     <paramref name="elements" /> length.
+    /// </exception>
+    public IEnumerable<T> RandomElements<T>(IEnumerable<T> elements, uint count)
+    {
+        var array = elements.ToArray();
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(count, (uint)array.Length);
+
+        _random.Shuffle(array);
+        return array.Take((int)count);
+    }
+
+    /// <summary>
+    ///     Gets the random enum entity.
+    /// </summary>
+    /// <typeparam name="TEnum"></typeparam>
+    /// <returns>The <typeparamref name="TEnum" /> exemplar.</returns>
+    public TEnum Enum<TEnum>()
+        where TEnum : struct, Enum
+    {
+        var values = System.Enum.GetValues<TEnum>();
+        return RandomElement(values);
+    }
+
+    /// <summary>
+    ///     Gets the random enum entities.
+    /// </summary>
+    /// <param name="count">The num of random enums to get.</param>
+    /// <typeparam name="TEnum"></typeparam>
+    /// <returns>The <typeparamref name="TEnum" /> exemplar.</returns>
+    public IEnumerable<TEnum> Enums<TEnum>(uint count)
+        where TEnum : struct, Enum
+    {
+        var values = System.Enum.GetValues<TEnum>();
+        return RandomElements(values, count);
+    }
 }
