@@ -54,7 +54,8 @@ public class Startup(IConfiguration configuration) : ExtraStartupBase(configurat
         services.AddValidator<SomeBodyRequestValidator, SomeBodyRequest>();
 
         services.AddClient<ITestApplicationClient, TestApplicationClient>()
-            .FromConfiguration(Configuration, ServiceApiInfo.ServiceName).Register();
+            .FromConfiguration(Configuration, ServiceApiInfo.ServiceName)
+            .AddAuthTokenFromHttpContextResolver().Register();
     }
 
     protected override void ConfigureMiddlewares(IApplicationBuilder app, IHostEnvironment env)
