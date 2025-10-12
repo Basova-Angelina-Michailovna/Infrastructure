@@ -1,6 +1,6 @@
 using JetBrains.Annotations;
 
-namespace StretchRoom.Infrastructure.Helpers;
+namespace StretchRoom.Tests.Infrastructure;
 
 /// <summary>
 ///     The <see cref="SrRandomizer" /> class.

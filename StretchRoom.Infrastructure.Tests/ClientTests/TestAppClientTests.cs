@@ -1,11 +1,11 @@
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StretchRoom.Infrastructure.Exceptions;
-using StretchRoom.Infrastructure.Helpers;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext.Requests;
 using StretchRoom.Infrastructure.TestApplication.Client.Implementations;
 using StretchRoom.Infrastructure.TestApplication.DaL;
+using StretchRoom.Tests.Infrastructure;
 
 namespace StretchRoom.Infrastructure.Tests.ClientTests;
 

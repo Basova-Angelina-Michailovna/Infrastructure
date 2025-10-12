@@ -1,5 +1,5 @@
-using FluentAssertions;
-using StretchRoom.Infrastructure.Helpers;
+using AwesomeAssertions;
+using StretchRoom.Tests.Infrastructure;
 
 namespace StretchRoom.Infrastructure.UnitTests.Helpers;
 

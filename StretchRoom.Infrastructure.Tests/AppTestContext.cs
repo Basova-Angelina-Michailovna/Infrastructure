@@ -1,6 +1,6 @@
 using System.Diagnostics;
-using StretchRoom.Infrastructure.Helpers;
 using StretchRoom.Infrastructure.Tests.AppInitializer;
+using StretchRoom.Tests.Infrastructure;
 using Testcontainers.PostgreSql;
 
 namespace StretchRoom.Infrastructure.Tests;

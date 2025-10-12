@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StretchRoom.Infrastructure.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StretchRoom.Infrastructure.UnitTests", "StretchRoom.Infrastructure.UnitTests\StretchRoom.Infrastructure.UnitTests.csproj", "{F279F9A5-EF2A-4066-A766-22ABBEAE897F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StretchRoom.Tests.Infrastructure", "StretchRoom.Tests.Infrastructure\StretchRoom.Tests.Infrastructure.csproj", "{2DAC2169-5C36-407D-8295-8BF67BD50620}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{F279F9A5-EF2A-4066-A766-22ABBEAE897F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F279F9A5-EF2A-4066-A766-22ABBEAE897F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F279F9A5-EF2A-4066-A766-22ABBEAE897F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DAC2169-5C36-407D-8295-8BF67BD50620}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DAC2169-5C36-407D-8295-8BF67BD50620}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DAC2169-5C36-407D-8295-8BF67BD50620}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DAC2169-5C36-407D-8295-8BF67BD50620}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

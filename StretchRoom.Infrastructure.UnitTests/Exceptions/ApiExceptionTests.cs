@@ -1,8 +1,8 @@
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using StretchRoom.Infrastructure.Exceptions;
-using StretchRoom.Infrastructure.Helpers;
+using StretchRoom.Tests.Infrastructure;
 
 namespace StretchRoom.Infrastructure.UnitTests.Exceptions;
 
@@ -96,7 +96,7 @@ public class ApiExceptionTests
     [Test]
     public void When_Exception_With_RandomExceptionAndNoReturningType_Result_CorrectFields()
     {
-        var act = () => ApiExceptionHelper.ThrowException<Exception>(new Exception(Randomizer.String(10)));
+        var act = () => ApiExceptionHelper.ThrowException(new Exception(Randomizer.String(10)));
 
         var assertion = act.Should().Throw<ApiException>().And;
         assertion.ProblemDetails.Status.Should().Be(StatusCodes.Status500InternalServerError);
