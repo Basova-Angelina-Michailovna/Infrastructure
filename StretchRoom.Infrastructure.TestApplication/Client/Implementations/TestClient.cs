@@ -1,11 +1,12 @@
 using Flurl.Http.Configuration;
 using Microsoft.AspNetCore.Mvc;
+using StretchRoom.Infrastructure.AuthorizationTestApplication.BoundedContext;
 using StretchRoom.Infrastructure.Exceptions;
 using StretchRoom.Infrastructure.HttpClient;
-using StretchRoom.Infrastructure.TestApplication.BoundedContext;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext.Requests;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext.Responses;
 using StretchRoom.Infrastructure.TestApplication.Client.Interfaces;
+using RoutesDictionary = StretchRoom.Infrastructure.TestApplication.BoundedContext.RoutesDictionary;
 
 namespace StretchRoom.Infrastructure.TestApplication.Client.Implementations;
 
@@ -100,5 +101,34 @@ public class TestClient(
             token: token);
 
         if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
+    }
+
+    public async Task<GenerateTokenResponse> GenerateTokenAsync(CancellationToken token)
+    {
+        var result = await GetJsonAsync<GenerateTokenResponse, ProblemDetails>(
+            url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.GetToken),
+            token: token);
+        
+        if (!result.IsSuccess || result.Result is null)
+        {
+            return ApiExceptionHelper.ThrowApiException<GenerateTokenResponse>(result.Error, result.StatusCode);
+        }
+
+        return result.Result;
+    }
+
+    public async Task ValidateTokenAsync(string jwt, CancellationToken token)
+    {
+        var result = await GetAsync<ProblemDetails>(
+            url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.ValidateToken),
+            new Dictionary<string, object>
+            {
+                { "Authorization", jwt }
+            }, token);
+
+        if (!result.IsSuccess)
+        {
+            ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
+        }
     }
 }

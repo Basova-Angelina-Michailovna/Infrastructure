@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using Org.BouncyCastle.Utilities.Encoders;
 
 namespace StretchRoom.Tests.Infrastructure;
 
@@ -18,6 +19,8 @@ public class SrRandomizer(int seed = 0)
     /// </summary>
     public string Chars { get; set; } = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToLower();
 
+    private string HexChars { get; } = "ABCDEF1234567890";
+
     /// <summary>
     ///     Gets the random string with specified length.
     /// </summary>
@@ -25,10 +28,26 @@ public class SrRandomizer(int seed = 0)
     /// <returns>The new instance of <see cref="string" />.</returns>
     public string String(uint length = 0)
     {
+        return String(length, Chars);
+    }
+
+    private string String(uint length, string chars)
+    {
+        length = length == 0 ? UInt(0U, byte.MaxValue) : length;
         return new string(
-            Enumerable.Repeat(Chars, (int)length)
+            Enumerable.Repeat(chars, (int)length)
                 .Select(s => s[Int(0, s.Length)]).ToArray()
         );
+    }
+
+    /// <summary>
+    ///     Gets the random hex string with specified length.
+    /// </summary>
+    /// <param name="length">The string length. If 0 the random length will be.</param>
+    /// <returns>The new instance of hex <see cref="string" />.</returns>
+    public string HexString(uint length = 0) //TODO: test it 
+    {
+        return String(length, HexChars);
     }
 
     /// <summary>
@@ -112,6 +131,35 @@ public class SrRandomizer(int seed = 0)
     public long Long(long minValue, long maxValue)
     {
         return _random.NextInt64(minValue, maxValue);
+    }
+    
+    /// <summary>
+    ///     Gets the random byte value.
+    /// </summary>
+    /// <returns>The random byte value.</returns>
+    public byte Byte() // TODO: test it
+    {
+        return Byte(byte.MinValue, byte.MaxValue);
+    }
+
+    /// <summary>
+    ///     Gets the random byte value.
+    /// </summary>
+    /// <returns>The random byte value.</returns>
+    public byte Byte(long minValue)
+    {
+        return Byte(minValue, byte.MaxValue);
+    }
+
+    /// <summary>
+    ///     Gets the random byte value.
+    /// </summary>
+    /// <returns>The random byte value.</returns>
+    public byte Byte(long minValue, long maxValue)
+    {
+        var bytes = new byte[1];
+        _random.NextBytes(bytes);
+        return bytes[0];
     }
 
     /// <summary>
@@ -236,6 +284,16 @@ public class SrRandomizer(int seed = 0)
     public double[] DoubleArray(uint length = 0)
     {
         return Array((_, rand) => rand.Double(), length);
+    }
+    
+    /// <summary>
+    ///     Gets the random array of bytes.
+    /// </summary>
+    /// <param name="length">The array length.</param>
+    /// <returns>The new array of bytes.</returns>
+    public byte[] ByteArray(uint length = 0)
+    {
+        return Array((_, rand) => rand.Byte(), length);
     }
 
     /// <summary>

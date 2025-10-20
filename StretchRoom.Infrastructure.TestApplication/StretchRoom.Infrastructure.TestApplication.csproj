@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\StretchRoom.Infrastructure.AuthorizationTestApplication\StretchRoom.Infrastructure.AuthorizationTestApplication.csproj" />
         <ProjectReference Include="..\StretchRoom.Infrastructure\StretchRoom.Infrastructure.csproj"/>
     </ItemGroup>
 

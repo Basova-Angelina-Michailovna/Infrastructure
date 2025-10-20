@@ -1,3 +1,4 @@
+using StretchRoom.Infrastructure.AuthorizationTestApplication.Client;
 using StretchRoom.Infrastructure.DatabaseRegistration;
 using StretchRoom.Infrastructure.Extensions;
 using StretchRoom.Infrastructure.HttpClient.ClientRegistration;
@@ -54,7 +55,10 @@ public class Startup(IConfiguration configuration) : ExtraStartupBase(configurat
         services.AddValidator<SomeBodyRequestValidator, SomeBodyRequest>();
 
         services.AddClient<ITestApplicationClient, TestApplicationClient>()
-            .FromConfiguration(Configuration, ServiceApiInfo.ServiceName)
+            .FromConfiguration(Configuration, ServiceApiInfo.ServiceName).Register();
+        
+        services.AddClient<IAuthAppClient, AuthAppClient>()
+            .FromConfiguration(Configuration, AuthorizationTestApplication.BoundedContext.RoutesDictionary.ServiceName)
             .AddAuthTokenFromHttpContextResolver().Register();
     }
 

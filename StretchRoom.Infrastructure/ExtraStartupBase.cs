@@ -3,13 +3,13 @@ using Asp.Versioning;
 using EBCEYS.ContainersEnvironment.HealthChecks.Extensions;
 using HealthChecks.ApplicationStatus.DependencyInjection;
 using JetBrains.Annotations;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -19,6 +19,7 @@ using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 using StretchRoom.Infrastructure.ControllerFilters;
 using StretchRoom.Infrastructure.Extensions;
 using StretchRoom.Infrastructure.Helpers;
+using StretchRoom.Infrastructure.Helpers.Jwt;
 using StretchRoom.Infrastructure.Interfaces;
 using StretchRoom.Infrastructure.Models;
 using StretchRoom.Infrastructure.Options;
@@ -37,14 +38,14 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
     private const string JwtOptionsConfigPath = "JwtOptions";
 
     /// <summary>
-    ///     Indicates that server should user authorization.
-    /// </summary>
-    protected bool UseAuthorization { get; init; }
-
-    /// <summary>
     ///     Indicates that server should use authentication.
     /// </summary>
-    protected bool UseAuthentication { get; init; }
+    protected virtual bool UseAuthentication { get; init; }
+
+    /// <summary>
+    ///     Indicates that jwt should be proxied and not be configured at the service.
+    /// </summary>
+    protected virtual bool ProxyToken { get; init; } = true;
 
     /// <summary>
     ///     The health check server port.
@@ -94,9 +95,11 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             x.MultipartBodyLengthLimit = int.MaxValue;
         });
 
-        if (UseAuthorization) services.AddAuthorization();
-
-        if (UseAuthentication) ConfigureAuthentication(services);
+        if (UseAuthentication)
+        {
+            services.AddAuthorization();
+            ConfigureAuthentication(services);
+        }
 
         ConfigureSwagger(services);
 
@@ -134,9 +137,11 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
         else
             app.ConfigureHealthChecks(HealthCheckPort.Value);
 
-        if (UseAuthentication) app.UseAuthentication();
-
-        if (UseAuthorization) app.UseAuthorization();
+        if (UseAuthentication)
+        {
+            app.UseAuthentication();
+            app.UseAuthorization();
+        }
 
         app.UseSwagger();
         app.UseSwaggerUI(opts =>
@@ -191,15 +196,22 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
 
     private void ConfigureAuthentication(IServiceCollection services)
     {
+        var builder = services.AddAuthentication(opts =>
+        {
+            opts.DefaultAuthenticateScheme = JwtGenerator.AuthSchema;
+            opts.DefaultScheme = JwtGenerator.AuthSchema;
+            opts.DefaultChallengeScheme = JwtGenerator.AuthSchema;
+        });
+
+        if (ProxyToken) // do it later after users-service realization!!! On start request users-service for jwt settings and apply it here
+        {
+            builder.AddJwtBearer();
+            return;
+        }
         services.Configure<JwtOptions>(Configuration.GetSection(JwtOptionsConfigPath));
         var jwtOpts = Configuration.GetSection(JwtOptionsConfigPath).Get<JwtOptions>()
                       ?? throw new ApplicationException("Can not find jwt options!");
-        services.AddAuthentication(opts =>
-        {
-            opts.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            opts.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            opts.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        }).AddJwtBearer(cfg =>
+        builder.AddJwtBearer(cfg =>
         {
             cfg.RequireHttpsMetadata = false;
             cfg.SaveToken = true;
@@ -214,6 +226,7 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
                     new SymmetricSecurityKey(Convert.FromBase64String(jwtOpts.Base64Key))
             };
         });
+        services.TryAddSingleton<IJwtGenerator, JwtGenerator>();
     }
 
     private void ConfigureSwagger(IServiceCollection services)
@@ -229,7 +242,7 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
                     Version = apiVersion
                 });
             opts.DocInclusionPredicate((docName, apiDesc) => apiDesc.GroupName == docName);
-            if (UseAuthorization)
+            if (UseAuthentication)
             {
                 opts.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {

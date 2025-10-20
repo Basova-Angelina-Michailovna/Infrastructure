@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using StretchRoom.Infrastructure.AuthorizationTestApplication.Client;
 using StretchRoom.Infrastructure.Helpers;
 using StretchRoom.Infrastructure.HttpClient.TokenManager;
 using StretchRoom.Infrastructure.Interfaces;
@@ -64,7 +65,7 @@ public class DiCTests
     [Test]
     public void When_AppIsRunning_With_TestApp_Result_AuthTokenResolverExists()
     {
-        var manager = _context.GetService<IClientTokenManager<ITestApplicationClient>>();
+        var manager = _context.GetService<IClientTokenManager<IAuthAppClient>>();
 
         manager.Should().NotBeNull();
     }

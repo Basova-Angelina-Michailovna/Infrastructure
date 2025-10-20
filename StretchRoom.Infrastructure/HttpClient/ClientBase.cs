@@ -39,7 +39,7 @@ public abstract class ClientBase
         Func<Task<string>>? tokenResolver = null)
     {
         _tokenResolver = tokenResolver;
-        Policy = DefaultClientPollyHelper.CreateDefaultHttpPolly<IFlurlResponse>();
+        Policy = DefaultClientPollyHelper.CreateDefaultHttpPolly<IFlurlResponse>(Timeout);
         _client = clientCache.GetOrAdd(ClientName, baseUrlResolver(), ConfigureClient);
         _logger = loggerFactory.CreateLogger(GetType());
     }
@@ -53,6 +53,11 @@ public abstract class ClientBase
     ///     The default response awaiting timeout.
     /// </summary>
     protected TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    ///     The default delay between retries.
+    /// </summary>
+    protected TimeSpan DelayBetweenRetries { get; init; } = TimeSpan.FromSeconds(3);
 
     /// <summary>
     ///     The default http request executing policy.
@@ -200,6 +205,26 @@ public abstract class ClientBase
         var request = await PrepareRequest(url, headers);
 
         var response = await ExecuteWithPolicyAsync(request, HttpMethod.Delete, token: token);
+
+        return await OperationResult<TError>.CreateFromResponseAsync(response);
+    }
+    
+    /// <summary>
+    ///     Sends POST request.
+    /// </summary>
+    /// <param name="url">The url.</param>
+    /// <param name="headers">The headers.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TError">The error response type.</typeparam>
+    /// <returns>The new instance of <see cref="OperationResult{TError}" />.</returns>
+    protected async Task<OperationResult<TError>> PostAsync<TError>(
+        Action<Url> url,
+        IDictionary<string, object>? headers = null,
+        CancellationToken token = default) where TError : class
+    {
+        var request = await PrepareRequest(url, headers);
+
+        var response = await ExecuteWithPolicyAsync(request, HttpMethod.Post, token: token);
 
         return await OperationResult<TError>.CreateFromResponseAsync(response);
     }
@@ -456,11 +481,6 @@ public abstract class ClientBase
         var requestHeaders = await GetDefaultHeaders(headers);
         var request = _client.Request().WithHeaders(requestHeaders);
         url.Invoke(request.Url);
-        //var uri = new Url(_client.BaseUrl);
-        //url.Invoke(uri);
-        //var req = new FlurlRequest(uri).WithHeaders(requestHeaders);
-        //req.Client = _client;
-        //url.Invoke(request.Url);
         return request;
     }
 
@@ -468,7 +488,7 @@ public abstract class ClientBase
         IDictionary<string, object>? additionalHeaders = null)
     {
         var headers = new Dictionary<string, object>();
-        if (_tokenResolver is not null)
+        if (_tokenResolver is not null && !(additionalHeaders?.ContainsKey(AuthorizationHeader) ?? false))
         {
             var token = await _tokenResolver.Invoke();
             headers.Add(AuthorizationHeader, token);

@@ -15,8 +15,10 @@ internal class AppTestContext
     private TestAppInitializer _app;
 
     private PostgreSqlContainer _postgres;
+    private AuthAppInitializer _authApp;
 
     public static AppContext AppContext { get; private set; }
+    public static AuthAppContext AuthAppContext { get; private set; }
 
     [OneTimeSetUp]
     public async Task Setup()
@@ -30,15 +32,18 @@ internal class AppTestContext
         var appPort = PortSelector.GetPort(5053);
         var healthChecksPort = PortSelector.GetPort(8080);
 
-        _app = new TestAppInitializer(_postgres.GetConnectionString(), appPort, healthChecksPort);
+        _authApp = new AuthAppInitializer(PortSelector.GetPort(5054));
+        _app = new TestAppInitializer(_postgres.GetConnectionString(), appPort, healthChecksPort, _authApp);
 
         AppContext = new AppContext(_app.Server.Services, await _app.CreateAppClient(_app.Server));
+        AuthAppContext = new AuthAppContext(_authApp.Server.Services, await _authApp.CreateAppClient(_authApp.Server));
     }
 
     [OneTimeTearDown]
     public async Task TearDown()
     {
         await _app.DisposeAsync();
+        await _authApp.DisposeAsync();
         await _postgres.StopAsync();
         await _postgres.DisposeAsync();
     }

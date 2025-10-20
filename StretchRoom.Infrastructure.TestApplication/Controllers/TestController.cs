@@ -1,13 +1,16 @@
 using System.ComponentModel.DataAnnotations;
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StretchRoom.Infrastructure.Attributes;
+using StretchRoom.Infrastructure.AuthorizationTestApplication.BoundedContext;
+using StretchRoom.Infrastructure.AuthorizationTestApplication.Client;
 using StretchRoom.Infrastructure.Exceptions;
 using StretchRoom.Infrastructure.Helpers;
-using StretchRoom.Infrastructure.TestApplication.BoundedContext;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext.Requests;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext.Responses;
 using StretchRoom.Infrastructure.TestApplication.Commands;
+using RoutesDictionary = StretchRoom.Infrastructure.TestApplication.BoundedContext.RoutesDictionary;
 
 namespace StretchRoom.Infrastructure.TestApplication.Controllers;
 
@@ -96,6 +99,25 @@ public class TestController : ControllerBase
     {
         await commandExecutor.ExecuteAsync<UpdateEntityCommandContext, UpdateEntityCommandResult>(
             new UpdateEntityCommandContext(name, changeNameRequest.NewName), token);
+        return Ok();
+    }
+
+    [HttpGet(ControllerInfo.Methods.GetToken)]
+    public async Task<IActionResult> GetToken(
+        [FromServices] IAuthAppClient client,
+        CancellationToken token)
+    {
+        var result = await client.GenerateTokenAsync(new GenerateTokenRequest("Vitalik"), token);
+        
+        return Ok(result);
+    }
+
+    [HttpGet(ControllerInfo.Methods.ValidateToken)]
+    public async Task<IActionResult> ValidateToken(
+        [FromServices] IAuthAppClient client,
+        CancellationToken token)
+    {
+        await client.ValidateTokenAsync(token);
         return Ok();
     }
 }
