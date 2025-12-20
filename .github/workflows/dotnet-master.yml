@@ -1,0 +1,88 @@
+name: dotnet-master
+
+on:
+  push:
+    branches:
+      - master
+      - '**'        # all branches
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Calculate version
+        run: |
+          BASE_VERSION=$(cat .version)
+          VERSION="$BASE_VERSION.${{ github.run_number }}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build \
+          --configuration Release \
+          --no-restore \
+          /p:Version=${{ env.VERSION }}
+
+      - name: Test
+        run: dotnet test \
+          --configuration Release \
+          --no-build
+
+  deploy:
+    name: Publish Package
+    needs: build-test
+    runs-on: ubuntu-latest
+
+    # 🚨 THIS IS THE IMPORTANT PART
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Calculate version
+        run: |
+          BASE_VERSION=$(cat .version)
+          VERSION="$BASE_VERSION.${{ github.run_number }}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Pack
+        run: dotnet pack \
+          --configuration Release \
+          --no-build \
+          /p:PackageVersion=${{ env.VERSION }} \
+          -o ./artifacts
+
+      - name: Publish to GitHub Packages
+        run: |
+          dotnet nuget push ./artifacts/*.nupkg \
+            --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
+            --skip-duplicate
