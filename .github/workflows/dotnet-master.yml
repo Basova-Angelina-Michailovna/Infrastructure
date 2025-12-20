@@ -38,13 +38,13 @@ jobs:
 
       - name: Build solution
         run: dotnet build Infrastructure.sln \
-          --configuration Release \
+          -c Release\
           --no-restore \
-          /p:Version=${{ env.VERSION }}
+          -p:Version=${{ env.VERSION }}
 
       - name: Run all tests
         run: dotnet test Infrastructure.sln \
-          --configuration Release \
+          -c Release\
           --no-build
 
   publish:
@@ -74,9 +74,9 @@ jobs:
       - name: Pack all packable projects
         run: |
           dotnet pack Infrastructure.sln \
-            --configuration Release \
+            -c Release\
             --no-build \
-            /p:PackageVersion=${{ env.VERSION }} \
+            -p:PackageVersion=${{ env.VERSION }} \
             -o ./artifacts
 
       - name: Publish all packages to GitHub Packages
