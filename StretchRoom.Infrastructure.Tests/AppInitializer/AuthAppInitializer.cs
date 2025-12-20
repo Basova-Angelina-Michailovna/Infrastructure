@@ -12,6 +12,7 @@ using StretchRoom.Infrastructure.AuthorizationTestApplication;
 using StretchRoom.Infrastructure.AuthorizationTestApplication.Client;
 using StretchRoom.Infrastructure.Services.ExecutedServices;
 using StretchRoom.Tests.Infrastructure;
+using StretchRoom.Tests.Infrastructure.Helpers;
 
 namespace StretchRoom.Infrastructure.Tests.AppInitializer;
 

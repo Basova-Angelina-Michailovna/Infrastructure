@@ -6,6 +6,7 @@ using StretchRoom.Infrastructure.TestApplication.BoundedContext.Requests;
 using StretchRoom.Infrastructure.TestApplication.Client.Implementations;
 using StretchRoom.Infrastructure.TestApplication.DaL;
 using StretchRoom.Tests.Infrastructure;
+using StretchRoom.Tests.Infrastructure.Helpers;
 
 namespace StretchRoom.Infrastructure.Tests.ClientTests;
 

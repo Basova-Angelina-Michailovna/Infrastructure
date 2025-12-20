@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using StretchRoom.Infrastructure.Exceptions;
 using StretchRoom.Infrastructure.TestApplication.Client.Implementations;
 using StretchRoom.Tests.Infrastructure;
+using StretchRoom.Tests.Infrastructure.Helpers;
 
 namespace StretchRoom.Infrastructure.Tests.ClientTests;
 

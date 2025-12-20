@@ -1,7 +1,7 @@
 using System.Net.NetworkInformation;
 using JetBrains.Annotations;
 
-namespace StretchRoom.Tests.Infrastructure;
+namespace StretchRoom.Tests.Infrastructure.Helpers;
 
 /// <summary>
 ///     The <see cref="PortSelector" /> class.

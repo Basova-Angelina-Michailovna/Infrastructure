@@ -4,6 +4,12 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <IsPackable>true</IsPackable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <PackageId>StretchRoom.Tests.Infrastructure</PackageId>
+        <Authors>EBCEYS</Authors>
+        <RepositoryUrl>https://github.com/Basova-Angelina-Michailovna/Infrastructure</RepositoryUrl>
     </PropertyGroup>
 
     <ItemGroup>

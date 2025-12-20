@@ -1,7 +1,6 @@
 using JetBrains.Annotations;
-using Org.BouncyCastle.Utilities.Encoders;
 
-namespace StretchRoom.Tests.Infrastructure;
+namespace StretchRoom.Tests.Infrastructure.Helpers;
 
 /// <summary>
 ///     The <see cref="SrRandomizer" /> class.
