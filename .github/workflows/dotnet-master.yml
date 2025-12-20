@@ -1,10 +1,10 @@
-name: dotnet-master
+name: CI / CD (Multi-Project)
 
 on:
   push:
     branches:
       - master
-      - '**'        # all branches
+      - '**'
   pull_request:
     branches:
       - master
@@ -33,26 +33,24 @@ jobs:
           VERSION="$BASE_VERSION.${{ github.run_number }}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Restore
-        run: dotnet restore
+      - name: Restore solution
+        run: dotnet restore Infrastructure.sln
 
-      - name: Build
-        run: dotnet build \
+      - name: Build solution
+        run: dotnet build Infrastructure.sln \
           --configuration Release \
           --no-restore \
           /p:Version=${{ env.VERSION }}
 
-      - name: Test
-        run: dotnet test \
+      - name: Run all tests
+        run: dotnet test Infrastructure.sln \
           --configuration Release \
           --no-build
 
-  deploy:
-    name: Publish Package
+  publish:
+    name: Publish NuGet Packages
     needs: build-test
     runs-on: ubuntu-latest
-
-    # 🚨 THIS IS THE IMPORTANT PART
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     steps:
@@ -70,17 +68,18 @@ jobs:
           VERSION="$BASE_VERSION.${{ github.run_number }}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Restore
-        run: dotnet restore
+      - name: Restore solution
+        run: dotnet restore Infrastructure.sln
 
-      - name: Pack
-        run: dotnet pack \
-          --configuration Release \
-          --no-build \
-          /p:PackageVersion=${{ env.VERSION }} \
-          -o ./artifacts
+      - name: Pack all packable projects
+        run: |
+          dotnet pack Infrastructure.sln \
+            --configuration Release \
+            --no-build \
+            /p:PackageVersion=${{ env.VERSION }} \
+            -o ./artifacts
 
-      - name: Publish to GitHub Packages
+      - name: Publish all packages to GitHub Packages
         run: |
           dotnet nuget push ./artifacts/*.nupkg \
             --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
