@@ -131,7 +131,7 @@ public class SrRandomizer(int seed = 0)
     {
         return _random.NextInt64(minValue, maxValue);
     }
-    
+
     /// <summary>
     ///     Gets the random byte value.
     /// </summary>
@@ -284,7 +284,7 @@ public class SrRandomizer(int seed = 0)
     {
         return Array((_, rand) => rand.Double(), length);
     }
-    
+
     /// <summary>
     ///     Gets the random array of bytes.
     /// </summary>

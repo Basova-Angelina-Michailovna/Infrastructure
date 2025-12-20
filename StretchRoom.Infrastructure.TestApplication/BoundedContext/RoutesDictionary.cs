@@ -22,7 +22,7 @@ public static class RoutesDictionary
             public const string GetCommand = "command";
             public const string PutCommand = "command";
             public const string DeleteCommand = "command";
-            
+
             public const string GetToken = "token";
             public const string ValidateToken = "validate/token";
         }

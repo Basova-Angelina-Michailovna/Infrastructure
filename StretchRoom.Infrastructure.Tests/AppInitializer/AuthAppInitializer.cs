@@ -1,17 +1,12 @@
 using Flurl.Http;
 using Flurl.Http.Configuration;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Serilog.Extensions.Logging;
 using StretchRoom.Infrastructure.AuthorizationTestApplication;
 using StretchRoom.Infrastructure.AuthorizationTestApplication.Client;
 using StretchRoom.Infrastructure.Services.ExecutedServices;
-using StretchRoom.Tests.Infrastructure;
 using StretchRoom.Tests.Infrastructure.Helpers;
 
 namespace StretchRoom.Infrastructure.Tests.AppInitializer;
@@ -40,10 +35,9 @@ public class AuthAppInitializer(int appPort) : WebApplicationFactory<Authorizati
         config.AddInMemoryCollection(new Dictionary<string, string?>
         {
             { "Urls", $"http://0.0.0.0:{appPort}" },
-            {"JwtOptions:Issuer", "Vitalik"},
-            {"JwtOptions:Audience", "Vitalik" },
-            {"JwtOptions:Base64Key", new SrRandomizer().HexString(256) },
-            
+            { "JwtOptions:Issuer", "Vitalik" },
+            { "JwtOptions:Audience", "Vitalik" },
+            { "JwtOptions:Base64Key", new SrRandomizer().HexString(256) }
         });
     }
 

@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using Asp.Versioning;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StretchRoom.Infrastructure.Attributes;
 using StretchRoom.Infrastructure.AuthorizationTestApplication.BoundedContext;
@@ -108,7 +107,7 @@ public class TestController : ControllerBase
         CancellationToken token)
     {
         var result = await client.GenerateTokenAsync(new GenerateTokenRequest("Vitalik"), token);
-        
+
         return Ok(result);
     }
 

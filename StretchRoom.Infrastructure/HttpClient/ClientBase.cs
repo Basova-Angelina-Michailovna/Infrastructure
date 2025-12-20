@@ -208,7 +208,7 @@ public abstract class ClientBase
 
         return await OperationResult<TError>.CreateFromResponseAsync(response);
     }
-    
+
     /// <summary>
     ///     Sends POST request.
     /// </summary>

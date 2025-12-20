@@ -24,14 +24,14 @@ public class AuthorizationStartup(IConfiguration configuration) : ExtraStartupBa
 
     protected override void ServicesConfiguration(IServiceCollection services)
     {
-        services.AddSchedulingServices(true, async factory =>
-        {
-            await factory.ScheduleJobAsync<LogSomeJob>(Guid.NewGuid().ToString(), TimeSpan.FromSeconds(1));
-        });
+        services.AddSchedulingServices(true,
+            async factory =>
+            {
+                await factory.ScheduleJobAsync<LogSomeJob>(Guid.NewGuid().ToString(), TimeSpan.FromSeconds(1));
+            });
     }
 
     protected override void ConfigureMiddlewares(IApplicationBuilder app, IHostEnvironment env)
     {
-        
     }
 }

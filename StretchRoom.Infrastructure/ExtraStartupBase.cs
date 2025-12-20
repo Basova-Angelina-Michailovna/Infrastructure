@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 using Prometheus;
 using Serilog;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
@@ -253,9 +253,23 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
                     BearerFormat = "JWT",
                     Description = "JWT Authorization header using the Bearer scheme."
                 });
-                opts.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+                /*opts.AddSecurityRequirement(document => new OpenApiSecurityRequirement //for dotnet 10 after quartz migration
                 {
                     [new OpenApiSecuritySchemeReference(schemeId, document)] = []
+                });*/
+                opts.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+
+
+                        {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                        },
+
+
+                        Array.Empty<string>()
+                    }
                 });
             }
 

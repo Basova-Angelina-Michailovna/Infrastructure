@@ -16,7 +16,8 @@ public class ApiException : Exception
     /// </summary>
     /// <param name="problemDetails">The problem details.</param>
     /// <param name="message">The message.</param>
-    public ApiException(ProblemDetails problemDetails, string message) : base($"{message}{Environment.NewLine}{problemDetails.ToDiagnosticJson()}")
+    public ApiException(ProblemDetails problemDetails, string message) : base(
+        $"{message}{Environment.NewLine}{problemDetails.ToDiagnosticJson()}")
     {
         ProblemDetails = problemDetails;
     }
@@ -38,7 +39,8 @@ public class ApiException : Exception
     /// <param name="statusCode">The status code.</param>
     /// <param name="message">The message.</param>
     /// <param name="memberName">The member name.</param>
-    public ApiException(int statusCode, string message, [CallerMemberName] string memberName = "") : base($"Status code: {statusCode} with message: {message}")
+    public ApiException(int statusCode, string message, [CallerMemberName] string memberName = "") : base(
+        $"Status code: {statusCode} with message: {message}")
     {
         ProblemDetails = new ProblemDetails
         {

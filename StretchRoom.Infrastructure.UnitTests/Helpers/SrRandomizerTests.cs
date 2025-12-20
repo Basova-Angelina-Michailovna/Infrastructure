@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using StretchRoom.Tests.Infrastructure;
 using StretchRoom.Tests.Infrastructure.Helpers;
 
 namespace StretchRoom.Infrastructure.UnitTests.Helpers;

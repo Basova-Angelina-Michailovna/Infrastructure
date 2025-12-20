@@ -1,14 +1,8 @@
 using Flurl.Http;
 using Flurl.Http.Configuration;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Serilog.Extensions.Logging;
 using StretchRoom.Infrastructure.AuthorizationTestApplication.Client;
@@ -19,7 +13,11 @@ using StretchRoom.Infrastructure.TestApplication.Client.Implementations;
 
 namespace StretchRoom.Infrastructure.Tests.AppInitializer;
 
-public class TestAppInitializer(string connectionString, int appPort, int healthChecksPort, AuthAppInitializer authServer)
+public class TestAppInitializer(
+    string connectionString,
+    int appPort,
+    int healthChecksPort,
+    AuthAppInitializer authServer)
     : WebApplicationFactory<Startup>
 {
     private static System.Net.Http.HttpClient _authAppClient = null!;
@@ -77,6 +75,7 @@ public class TestAppInitializer(string connectionString, int appPort, int health
                     authClient.Settings.HttpVersion = builder.Settings.HttpVersion;
                     return authClient;
                 }
+
                 var client = new FlurlClient(_client);
                 client.Settings.Timeout = builder.Settings.Timeout;
                 client.Settings.AllowedHttpStatusRange = builder.Settings.AllowedHttpStatusRange;

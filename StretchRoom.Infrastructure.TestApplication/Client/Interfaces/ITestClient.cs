@@ -14,7 +14,7 @@ public interface ITestClient
     Task<CommandResultResponse> GetCommandAsync(CancellationToken token);
     Task DeleteCommandAsync(string name, CancellationToken token);
     Task PutCommandAsync(string name, ChangeNameRequest request, CancellationToken token);
-    
+
     Task<GenerateTokenResponse> GenerateTokenAsync(CancellationToken token);
     Task ValidateTokenAsync(string jwt, CancellationToken token);
 }

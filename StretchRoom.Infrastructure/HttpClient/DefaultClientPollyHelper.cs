@@ -22,7 +22,7 @@ public static class DefaultClientPollyHelper
         Action<Exception, TimeSpan, int, Context>? onRetryAction = null)
     {
         var policy = Policy.Handle<FlurlHttpException>()
-            .WaitAndRetryAsync([delay], (exception, span, retry, ctx) 
+            .WaitAndRetryAsync([delay], (exception, span, retry, ctx)
                 => onRetryAction?.Invoke(exception, span, retry, ctx))
             .AsAsyncPolicy<TResult>();
         return policy;

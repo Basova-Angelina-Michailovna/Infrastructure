@@ -1,8 +1,6 @@
 using AwesomeAssertions;
 using FluentValidation;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using StretchRoom.Infrastructure.AuthorizationTestApplication.Client;
 using StretchRoom.Infrastructure.Helpers;
 using StretchRoom.Infrastructure.HttpClient.TokenManager;
@@ -105,7 +103,7 @@ public class DiCTests
     }
 
     private T? GetServiceIfExists<T>()
-    where T : class
+        where T : class
     {
         try
         {

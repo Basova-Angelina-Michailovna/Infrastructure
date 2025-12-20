@@ -9,13 +9,13 @@ using StretchRoom.Infrastructure.Options;
 namespace StretchRoom.Infrastructure.Helpers.Jwt;
 
 /// <summary>
-/// The <see cref="IJwtGenerator"/> interface.
+///     The <see cref="IJwtGenerator" /> interface.
 /// </summary>
 [PublicAPI]
 public interface IJwtGenerator
 {
     /// <summary>
-    /// Generates the JWT with specified <paramref name="claims"/>.
+    ///     Generates the JWT with specified <paramref name="claims" />.
     /// </summary>
     /// <param name="claims">The claims.</param>
     /// <returns>The new jwt token.</returns>
@@ -23,23 +23,22 @@ public interface IJwtGenerator
 }
 
 /// <summary>
-/// The <see cref="JwtGenerator"/> class.
+///     The <see cref="JwtGenerator" /> class.
 /// </summary>
 /// <param name="options">The jwt options.</param>
 internal class JwtGenerator(IOptions<JwtOptions> options) : IJwtGenerator
 {
     /// <summary>
-    /// The auth schema.
+    ///     The auth schema.
     /// </summary>
     public const string AuthSchema = JwtBearerDefaults.AuthenticationScheme;
+
     /// <inheritdoc />
     public string GenerateKey(params IEnumerable<Claim> claims)
     {
         DateTime? expires = null;
         if (options.Value.TokenTimeToLive.HasValue && options.Value.TokenTimeToLive.Value > TimeSpan.Zero)
-        {
             expires = DateTime.UtcNow.Add(options.Value.TokenTimeToLive.Value);
-        }
 
         var key = new SymmetricSecurityKey(Convert.FromBase64String(options.Value.Base64Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

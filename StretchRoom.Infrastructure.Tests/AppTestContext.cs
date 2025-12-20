@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using StretchRoom.Infrastructure.Tests.AppInitializer;
-using StretchRoom.Tests.Infrastructure;
 using StretchRoom.Tests.Infrastructure.Helpers;
 using Testcontainers.PostgreSql;
 
@@ -14,9 +13,9 @@ internal class AppTestContext
     private const string DbUser = "admin";
     private const string DbPassword = "password";
     private TestAppInitializer _app;
+    private AuthAppInitializer _authApp;
 
     private PostgreSqlContainer _postgres;
-    private AuthAppInitializer _authApp;
 
     public static AppContext AppContext { get; private set; }
     public static AuthAppContext AuthAppContext { get; private set; }

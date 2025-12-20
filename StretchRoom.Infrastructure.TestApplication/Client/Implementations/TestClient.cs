@@ -108,11 +108,9 @@ public class TestClient(
         var result = await GetJsonAsync<GenerateTokenResponse, ProblemDetails>(
             url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.GetToken),
             token: token);
-        
+
         if (!result.IsSuccess || result.Result is null)
-        {
             return ApiExceptionHelper.ThrowApiException<GenerateTokenResponse>(result.Error, result.StatusCode);
-        }
 
         return result.Result;
     }
@@ -126,9 +124,6 @@ public class TestClient(
                 { "Authorization", jwt }
             }, token);
 
-        if (!result.IsSuccess)
-        {
-            ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
-        }
+        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
     }
 }

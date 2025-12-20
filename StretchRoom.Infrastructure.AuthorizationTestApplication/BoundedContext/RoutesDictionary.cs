@@ -11,7 +11,7 @@ public static class RoutesDictionary
         internal const string ApiVersion = "1.0";
 
         public const string BaseRoute = BasePath + "/api/v1/auth";
-        
+
         public class Methods
         {
             public const string GetToken = "token";

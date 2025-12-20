@@ -56,7 +56,7 @@ public class Startup(IConfiguration configuration) : ExtraStartupBase(configurat
 
         services.AddClient<ITestApplicationClient, TestApplicationClient>()
             .FromConfiguration(Configuration, ServiceApiInfo.ServiceName).Register();
-        
+
         services.AddClient<IAuthAppClient, AuthAppClient>()
             .FromConfiguration(Configuration, AuthorizationTestApplication.BoundedContext.RoutesDictionary.ServiceName)
             .AddAuthTokenFromHttpContextResolver().Register();

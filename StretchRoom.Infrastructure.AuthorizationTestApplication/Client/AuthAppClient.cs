@@ -25,18 +25,15 @@ public class AuthAppClient(
     public async Task<GenerateTokenResponse> GenerateTokenAsync(GenerateTokenRequest request,
         CancellationToken token = default)
     {
-        var response = 
+        var response =
             await PostJsonAsync<GenerateTokenRequest, GenerateTokenResponse, ProblemDetails>(
-            url => url.AppendPathSegments(
-                BaseRoute, Methods.GetToken), 
-            request, 
-            null, 
-            token);
+                url => url.AppendPathSegments(
+                    BaseRoute, Methods.GetToken),
+                request,
+                null,
+                token);
 
-        if (response is { IsSuccess: true, Result: not null })
-        {
-            return response.Result;
-        }
+        if (response is { IsSuccess: true, Result: not null }) return response.Result;
 
         return ApiExceptionHelper.ThrowApiException<GenerateTokenResponse>(response.Error);
     }
@@ -46,10 +43,7 @@ public class AuthAppClient(
         var response = await PostAsync<ProblemDetails>(
             url => url.AppendPathSegments(BaseRoute, Methods.ValidateToken),
             token: token);
-        
-        if (!response.IsSuccess)
-        {
-            ApiExceptionHelper.ThrowApiException(response.Error);
-        }
+
+        if (!response.IsSuccess) ApiExceptionHelper.ThrowApiException(response.Error);
     }
 }
