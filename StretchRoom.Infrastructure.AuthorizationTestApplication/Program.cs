@@ -1,5 +1,7 @@
 using StretchRoom.Infrastructure.AuthorizationTestApplication.BoundedContext;
+using StretchRoom.Infrastructure.AuthorizationTestApplication.SchedulingJobs;
 using StretchRoom.Infrastructure.Models;
+using StretchRoom.Infrastructure.Scheduling;
 
 namespace StretchRoom.Infrastructure.AuthorizationTestApplication;
 
@@ -22,7 +24,10 @@ public class AuthorizationStartup(IConfiguration configuration) : ExtraStartupBa
 
     protected override void ServicesConfiguration(IServiceCollection services)
     {
-        
+        services.AddSchedulingServices(true, async factory =>
+        {
+            await factory.ScheduleJobAsync<LogSomeJob>(Guid.NewGuid().ToString(), TimeSpan.FromSeconds(1));
+        });
     }
 
     protected override void ConfigureMiddlewares(IApplicationBuilder app, IHostEnvironment env)

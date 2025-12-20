@@ -33,7 +33,7 @@ internal class JwtGenerator(IOptions<JwtOptions> options) : IJwtGenerator
     /// </summary>
     public const string AuthSchema = JwtBearerDefaults.AuthenticationScheme;
     /// <inheritdoc />
-    public string GenerateKey(params IEnumerable<Claim> claims) //TODO: test it in unit tests and registration in DI
+    public string GenerateKey(params IEnumerable<Claim> claims)
     {
         DateTime? expires = null;
         if (options.Value.TokenTimeToLive.HasValue && options.Value.TokenTimeToLive.Value > TimeSpan.Zero)

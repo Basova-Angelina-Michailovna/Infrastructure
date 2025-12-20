@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Prometheus;
 using Serilog;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
@@ -208,6 +208,7 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             builder.AddJwtBearer();
             return;
         }
+
         services.Configure<JwtOptions>(Configuration.GetSection(JwtOptionsConfigPath));
         var jwtOpts = Configuration.GetSection(JwtOptionsConfigPath).Get<JwtOptions>()
                       ?? throw new ApplicationException("Can not find jwt options!");
@@ -244,25 +245,17 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             opts.DocInclusionPredicate((docName, apiDesc) => apiDesc.GroupName == docName);
             if (UseAuthentication)
             {
-                opts.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                const string schemeId = "bearer";
+                opts.AddSecurityDefinition(schemeId, new OpenApiSecurityScheme
                 {
                     Type = SecuritySchemeType.Http,
-                    In = ParameterLocation.Header,
-                    Name = "Authorization",
-                    Scheme = "bearer",
-                    BearerFormat = "jwt-bearer",
-                    Description =
-                        "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
+                    Scheme = schemeId,
+                    BearerFormat = "JWT",
+                    Description = "JWT Authorization header using the Bearer scheme."
                 });
-                opts.AddSecurityRequirement(new OpenApiSecurityRequirement
+                opts.AddSecurityRequirement(document => new OpenApiSecurityRequirement
                 {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                        },
-                        Array.Empty<string>()
-                    }
+                    [new OpenApiSecuritySchemeReference(schemeId, document)] = []
                 });
             }
 
