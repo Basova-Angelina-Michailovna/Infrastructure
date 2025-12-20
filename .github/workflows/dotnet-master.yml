@@ -1,4 +1,4 @@
-name: CI / CD (Multi-Project)
+name: CI / CD (Multi-Project .NET 10)
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
@@ -32,20 +32,23 @@ jobs:
           BASE_VERSION=$(cat .version)
           VERSION="$BASE_VERSION.${{ github.run_number }}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Calculated version: $VERSION"
 
-      - name: Restore solution
-        run: dotnet restore Infrastructure.sln
+      - name: Restore all projects
+        run: dotnet restore
 
-      - name: Build solution
-        run: dotnet build Infrastructure.sln \
-          -c Release\
-          --no-restore \
-          -p:Version=${{ env.VERSION }}
+      - name: Build all projects
+        run: |
+          for proj in $(find . -name '*.csproj'); do
+            dotnet build "$proj" -p:Version=${{ env.VERSION }}
+          done
 
-      - name: Run all tests
-        run: dotnet test Infrastructure.sln \
-          -c Release\
-          --no-build
+      - name: Detect and run test projects
+        run: |
+          for testproj in $(find . -name '*.csproj' | grep -i 'Test'); do
+            echo "Running tests: $testproj"
+            dotnet test "$testproj" --no-build
+          done
 
   publish:
     name: Publish NuGet Packages
@@ -57,7 +60,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
@@ -67,19 +70,21 @@ jobs:
           BASE_VERSION=$(cat .version)
           VERSION="$BASE_VERSION.${{ github.run_number }}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Calculated version: $VERSION"
 
-      - name: Restore solution
-        run: dotnet restore Infrastructure.sln
+      - name: Restore all projects
+        run: dotnet restore
 
-      - name: Pack all packable projects
+      - name: Detect and pack packable projects
         run: |
-          dotnet pack Infrastructure.sln \
-            -c Release\
-            --no-build \
-            -p:PackageVersion=${{ env.VERSION }} \
-            -o ./artifacts
+          for proj in $(find . -name '*.csproj'); do
+            if grep -q "<IsPackable>true</IsPackable>" "$proj"; then
+              echo "Packing project: $proj"
+              dotnet pack "$proj" --no-build -p:PackageVersion=${{ env.VERSION }} -o ./artifacts
+            fi
+          done
 
-      - name: Publish all packages to GitHub Packages
+      - name: Publish packages to GitHub Packages
         run: |
           dotnet nuget push ./artifacts/*.nupkg \
             --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
