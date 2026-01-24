@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using StretchRoom.Infrastructure.Exceptions;
 using StretchRoom.Infrastructure.TestApplication.Client.Implementations;
+using StretchRoom.Infrastructure.Tests.AppInitializer;
 using StretchRoom.Tests.Infrastructure.Helpers;
 
 namespace StretchRoom.Infrastructure.Tests.ClientTests;
@@ -9,13 +10,13 @@ public class AuthClientTests
 {
     private static readonly SrRandomizer Randomizer = new();
     private ITestApplicationClient _client;
-    private AppContext _context;
+    private AppTestClientContext _context;
 
     [SetUp]
     public void Setup()
     {
         _context = AppTestContext.AppContext;
-        _client = _context.Client;
+        _client = _context.ServiceClient;
     }
 
     [Test]

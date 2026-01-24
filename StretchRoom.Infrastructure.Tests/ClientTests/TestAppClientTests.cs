@@ -4,6 +4,7 @@ using StretchRoom.Infrastructure.Exceptions;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext.Requests;
 using StretchRoom.Infrastructure.TestApplication.Client.Implementations;
 using StretchRoom.Infrastructure.TestApplication.DaL;
+using StretchRoom.Infrastructure.Tests.AppInitializer;
 using StretchRoom.Tests.Infrastructure.Helpers;
 
 namespace StretchRoom.Infrastructure.Tests.ClientTests;
@@ -12,19 +13,19 @@ internal class TestAppClientTests
 {
     private static readonly SrRandomizer Randomizer = new();
     private ITestApplicationClient _client;
-    private AppContext _context;
+    private AppTestClientContext _context;
 
     [SetUp]
     public void Setup()
     {
         _context = AppTestContext.AppContext;
-        _client = _context.Client;
+        _client = _context.ServiceClient;
     }
 
     [TearDown]
     public async Task TearDown()
     {
-        await using var dbContext = await _context.ServiceProvider
+        await using var dbContext = await _context.Factory.Services
             .GetRequiredService<IDbContextFactory<DataModelContext>>()
             .CreateDbContextAsync();
 

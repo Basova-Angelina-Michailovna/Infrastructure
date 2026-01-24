@@ -1,70 +1,37 @@
-using Flurl.Http;
-using Flurl.Http.Configuration;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
-using NSubstitute;
 using Serilog.Extensions.Logging;
 using StretchRoom.Infrastructure.AuthorizationTestApplication;
 using StretchRoom.Infrastructure.AuthorizationTestApplication.Client;
-using StretchRoom.Infrastructure.Services.ExecutedServices;
-using StretchRoom.Tests.Infrastructure.Helpers;
+using StretchRoom.Tests.Infrastructure.IntegrationTests.WebApplication;
 
 namespace StretchRoom.Infrastructure.Tests.AppInitializer;
 
-public class AuthAppInitializer(int appPort) : WebApplicationFactory<AuthorizationStartup>
+public class AuthAppWebApplicationFactory(Action<IServiceCollection> beforeHostingStarted)
+    : TestWebApplicationFactory<AuthorizationStartup>
 {
-    private System.Net.Http.HttpClient _client = null!;
+    public override string ServiceId => "auth-app";
 
-    protected override IHostBuilder CreateHostBuilder()
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        return Host.CreateDefaultBuilder()
-            .ConfigureAppConfiguration(ConfigureConfiguration)
-            .ConfigureLogging(opts =>
-            {
-                opts.ClearProviders();
-                opts.SetMinimumLevel(LogLevel.Trace);
-                opts.AddConsole();
-            })
-            .ConfigureWebHostDefaults(web =>
-                web.UseStartup<AuthorizationStartup>().UseEnvironment("Development"));
+        builder.ConfigureServices(beforeHostingStarted);
+        base.ConfigureWebHost(builder);
     }
 
-    private void ConfigureConfiguration(IConfigurationBuilder config)
+    protected override void ConfigureTestServices(IServiceCollection services)
     {
-        config.Sources.Clear();
-        config.AddInMemoryCollection(new Dictionary<string, string?>
-        {
-            { "Urls", $"http://0.0.0.0:{appPort}" },
-            { "JwtOptions:Issuer", "Vitalik" },
-            { "JwtOptions:Audience", "Vitalik" },
-            { "JwtOptions:Base64Key", new SrRandomizer().HexString(256) }
-        });
+    }
+}
+
+public class AuthAppTestClientContext(Action<IServiceCollection> beforeHostingStarted)
+    : ClientTestContext<IAuthAppClient, AuthorizationStartup>
+{
+    protected override TestWebApplicationFactory<AuthorizationStartup> CreateWebApplicationFactory()
+    {
+        return new AuthAppWebApplicationFactory(beforeHostingStarted);
     }
 
-    public async Task<IAuthAppClient> CreateAppClient(TestServer server)
+    protected override IAuthAppClient CreateServiceClient(string baseAddress)
     {
-        _client = CreateClient();
-
-        await server.Services.ExecuteAllBeforeHostingStarted();
-
-        var flurlClientCache = Substitute.For<IFlurlClientCache>();
-        flurlClientCache.GetOrAdd(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Action<IFlurlClientBuilder>>())
-            .ReturnsForAnyArgs(call =>
-            {
-                var act = call.Arg<Action<IFlurlClientBuilder>>();
-                var builder = new FlurlClientBuilder();
-                act(builder);
-
-                var client = new FlurlClient(_client);
-                client.Settings.Timeout = builder.Settings.Timeout;
-                client.Settings.AllowedHttpStatusRange = builder.Settings.AllowedHttpStatusRange;
-                client.Settings.JsonSerializer = builder.Settings.JsonSerializer;
-                client.Settings.HttpVersion = builder.Settings.HttpVersion;
-
-                return client;
-            });
-
-        return new AuthAppClient(flurlClientCache, new SerilogLoggerFactory(),
-            () => _client.BaseAddress!.ToString());
+        var cache = CreateFlurlCache();
+        return new AuthAppClient(cache, new SerilogLoggerFactory(), () => baseAddress);
     }
 }

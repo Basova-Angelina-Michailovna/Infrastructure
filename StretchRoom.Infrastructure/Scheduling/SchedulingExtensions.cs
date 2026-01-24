@@ -33,7 +33,7 @@ public static class SchedulingExtensions
         services.AddQuartzHostedService(opts =>
         {
             opts.WaitForJobsToComplete = waitForJobsToComplete;
-            opts.AwaitApplicationStarted = false;
+            opts.AwaitApplicationStarted = true;
         });
 
         services.AddOptions<ScheduledJobsRunnerOptions>()

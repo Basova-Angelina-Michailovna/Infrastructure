@@ -45,7 +45,7 @@ jobs:
 
       - name: Detect and run test projects
         run: |
-          for testproj in $(find . -name '*.csproj' | grep -i 'Test'); do
+          for testproj in $(find . -name '*.csproj' | grep -i 'Tests'); do
             echo "Running tests: $testproj"
             dotnet test "$testproj" --no-build
           done

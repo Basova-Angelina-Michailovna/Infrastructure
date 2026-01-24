@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using StretchRoom.Infrastructure.Tests.AppInitializer;
 using StretchRoom.Tests.Infrastructure.Helpers;
+using StretchRoom.Tests.Infrastructure.IntegrationTests;
 using Testcontainers.PostgreSql;
 
 namespace StretchRoom.Infrastructure.Tests;
@@ -12,13 +13,13 @@ internal class AppTestContext
     private const string DatabaseName = "StretchRoom";
     private const string DbUser = "admin";
     private const string DbPassword = "password";
-    private TestAppInitializer _app;
-    private AuthAppInitializer _authApp;
 
     private PostgreSqlContainer _postgres;
 
-    public static AppContext AppContext { get; private set; }
-    public static AuthAppContext AuthAppContext { get; private set; }
+    public static AppTestClientContext AppContext { get; private set; }
+
+    public static AuthAppTestClientContext AuthAppClientContext { get; private set; }
+
 
     [OneTimeSetUp]
     public async Task Setup()
@@ -29,21 +30,50 @@ internal class AppTestContext
             .Build();
         await _postgres.StartAsync();
 
-        var appPort = PortSelector.GetPort(5053);
-        var healthChecksPort = PortSelector.GetPort(8080);
 
-        _authApp = new AuthAppInitializer(PortSelector.GetPort(5054));
-        _app = new TestAppInitializer(_postgres.GetConnectionString(), appPort, healthChecksPort, _authApp);
+        AuthAppClientContext = new AuthAppTestClientContext(sr =>
+            sr.AddSingleton<Func<DelegatingHandler>>(() => new TestRoutingMessageHandler()));
+        AuthAppClientContext.Initialize(conf =>
+        {
+            conf.UseProductionAppSettings = true;
+            conf.SolutionRelativePath = "StretchRoom.Infrastructure.Tests";
+            conf.BuilderConfiguration = builder =>
+            {
+                builder.AddInMemoryConfig("JwtOptions:Issuer", "vitaliy");
+                builder.AddInMemoryConfig("JwtOptions:Audience", "vitaliy");
+                builder.AddInMemoryConfig("JwtOptions:Base64Key", new SrRandomizer().HexString(64));
+            };
+        });
 
-        AppContext = new AppContext(_app.Server.Services, await _app.CreateAppClient(_app.Server));
-        AuthAppContext = new AuthAppContext(_authApp.Server.Services, await _authApp.CreateAppClient(_authApp.Server));
+        TestRoutingMessageHandler.RouteConfiguration.AddRoute(AuthAppClientContext);
+
+        AppContext = new AppTestClientContext(sr =>
+        {
+            sr.AddSingleton<Func<DelegatingHandler>>(() => new TestRoutingMessageHandler());
+        });
+        AppContext.Initialize(conf =>
+        {
+            conf.UseProductionAppSettings = true;
+            conf.SolutionRelativePath = "StretchRoom.Infrastructure.Tests";
+            conf.BuilderConfiguration = builder =>
+            {
+                builder.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "ConnectionStrings:TestApplication", _postgres.GetConnectionString() },
+                    { "auth-service:ServiceUrl", AuthAppClientContext.BaseAddress }
+                });
+            };
+        });
+
+        TestRoutingMessageHandler.RouteConfiguration.AddRoute(AppContext);
     }
 
     [OneTimeTearDown]
     public async Task TearDown()
     {
-        await _app.DisposeAsync();
-        await _authApp.DisposeAsync();
+        AuthAppClientContext.Teardown();
+        AppContext.Teardown();
+
         await _postgres.StopAsync();
         await _postgres.DisposeAsync();
     }

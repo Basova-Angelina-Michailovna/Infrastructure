@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using StretchRoom.Infrastructure.Services.ExecutedServices;
@@ -10,7 +11,8 @@ namespace StretchRoom.Infrastructure.DatabaseRegistration;
 /// <param name="opts">The db context registration options.</param>
 /// <param name="dbContextFactory">The db context factory.</param>
 /// <typeparam name="TDbContext">The db context to migrate.</typeparam>
-internal class MigrationApplierService<TDbContext>(
+[PublicAPI]
+public class MigrationApplierService<TDbContext>(
     IOptions<DbContextRegistrationOptions> opts,
     IDbContextFactory<TDbContext> dbContextFactory) : IBeforeHostingStartedService
     where TDbContext : DbContext

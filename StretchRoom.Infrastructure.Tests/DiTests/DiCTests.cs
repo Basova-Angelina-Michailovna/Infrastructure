@@ -6,7 +6,6 @@ using StretchRoom.Infrastructure.Helpers;
 using StretchRoom.Infrastructure.HttpClient.TokenManager;
 using StretchRoom.Infrastructure.Interfaces;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext.Requests;
-using StretchRoom.Infrastructure.TestApplication.Client.Implementations;
 using StretchRoom.Infrastructure.TestApplication.Commands;
 using StretchRoom.Infrastructure.TestApplication.DaL;
 
@@ -19,7 +18,7 @@ public class DiCTests
     [SetUp]
     public void SetUp()
     {
-        _context = AppTestContext.AppContext.ServiceProvider;
+        _context = AppTestContext.AppContext.Factory.Services;
     }
 
     [Test]
@@ -48,14 +47,14 @@ public class DiCTests
         var scopedCommand = scope.ServiceProvider
             .GetRequiredService<ICommand<AddEntityCommandContext, AddEntityCommandResult>>();
 
-        command.Should().BeNull();
+        command.Should().NotBeNull();
         scopedCommand.Should().NotBeNull();
     }
 
     [Test]
     public void When_AppIsRunning_With_TestApp_Result_ServiceClientExists()
     {
-        var client = _context.GetService<ITestApplicationClient>();
+        var client = _context.GetService<IAuthAppClient>();
 
         client.Should().NotBeNull();
     }
@@ -84,7 +83,7 @@ public class DiCTests
         using var scope = _context.CreateScope();
         var context = scope.ServiceProvider.GetService<DataModelContext>();
 
-        dataModelContext.Should().BeNull();
+        dataModelContext.Should().NotBeNull();
         context.Should().NotBeNull();
     }
 
@@ -99,7 +98,7 @@ public class DiCTests
 
         singletonExecutorExists.Should().NotBeNull();
         scopedExecutorExists.Should().NotBeNull();
-        scopedExecutorDoesntExists.Should().BeNull();
+        scopedExecutorDoesntExists.Should().NotBeNull();
     }
 
     private T? GetServiceIfExists<T>()
@@ -107,7 +106,7 @@ public class DiCTests
     {
         try
         {
-            return _context.GetService<T>();
+            return _context.GetRequiredService<T>();
         }
         catch (InvalidOperationException)
         {

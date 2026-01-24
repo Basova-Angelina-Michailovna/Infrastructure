@@ -148,11 +148,11 @@ public class ClientBaseRegistrationRegistrator<TInterface, TImplementation>(ISer
 
     private static Func<Task<string>> GetTokenResolverWithTokenManager(IServiceProvider sp)
     {
-        return () =>
+        return async () =>
         {
             var manager = sp.GetRequiredService<IClientTokenManager<TInterface>>();
-            var token = manager.GetToken() ?? string.Empty;
-            return Task.FromResult(token);
+            var token = await manager.GetTokenAsync() ?? string.Empty;
+            return token;
         };
     }
 }

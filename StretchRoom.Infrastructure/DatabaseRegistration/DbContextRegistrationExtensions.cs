@@ -32,7 +32,6 @@ public static class DbContextRegistrationExtensions
         services.AddOptions<DbContextRegistrationOptions>().Configure(registrationOptions);
 
         services.AddDbContextFactory<TDbContext>(OptionsAction);
-        //services.AddDbContext<TDbContext>(OptionsAction);
         services.AddBeforeHostingStarted<MigrationApplierService<TDbContext>>();
         return;
 

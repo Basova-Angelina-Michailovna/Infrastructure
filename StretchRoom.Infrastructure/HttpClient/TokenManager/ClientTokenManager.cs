@@ -14,7 +14,7 @@ public interface IClientTokenManager<TInterface>
     ///     Gets the auth token.
     /// </summary>
     /// <returns></returns>
-    string? GetToken();
+    Task<string?> GetTokenAsync();
 }
 
 /// <summary>
@@ -27,10 +27,10 @@ public class FromContextClientTokenManager<TInterface>(IHttpContextAccessor cont
     : IClientTokenManager<TInterface>
 {
     /// <inheritdoc />
-    public string? GetToken()
+    public Task<string?> GetTokenAsync()
     {
         if (contextAccessor.HttpContext?.Request.Headers.TryGetValue("Authorization", out var token) ??
-            false) return token;
-        return null;
+            false) return Task.FromResult((string?)token);
+        return Task.FromResult<string?>(null);
     }
 }
