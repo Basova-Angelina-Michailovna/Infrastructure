@@ -542,4 +542,17 @@ public abstract class ClientBase
             response.StatusCode,
             duration.TotalMilliseconds);
     }
+
+    /// <summary>
+    ///     Gets the auth headers.
+    /// </summary>
+    /// <param name="token">The jwt.</param>
+    /// <returns>The new instance of request headers.</returns>
+    protected static Dictionary<string, object> GetAuthHeaders(string token)
+    {
+        return new Dictionary<string, object>
+        {
+            { AuthorizationHeader, token }
+        };
+    }
 }

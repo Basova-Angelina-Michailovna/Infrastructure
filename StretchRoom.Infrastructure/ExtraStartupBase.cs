@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Prometheus;
 using Serilog;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
@@ -132,6 +132,9 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
         app.UseMetricServer();
         app.UseHttpMetrics();
 
+        app.UseExceptionCatcher();
+        app.UseRequestMetrics();
+
         if (HealthCheckPort is null)
             app.ConfigureHealthChecks();
         else
@@ -154,9 +157,6 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
 
 
         ConfigureMiddlewares(app, env);
-
-        app.UseExceptionCatcher();
-        app.UseRequestMetrics();
 
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }
@@ -253,24 +253,11 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
                     BearerFormat = "JWT",
                     Description = "JWT Authorization header using the Bearer scheme."
                 });
-                /*opts.AddSecurityRequirement(document => new OpenApiSecurityRequirement //for dotnet 10 after quartz migration
-                {
-                    [new OpenApiSecuritySchemeReference(schemeId, document)] = []
-                });*/
-                opts.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
+                opts.AddSecurityRequirement(document =>
+                    new OpenApiSecurityRequirement
                     {
-                        new OpenApiSecurityScheme
-
-
-                        {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                        },
-
-
-                        Array.Empty<string>()
-                    }
-                });
+                        [new OpenApiSecuritySchemeReference(schemeId, document)] = []
+                    });
             }
 
             opts.IncludeXmlComments(Assembly.GetExecutingAssembly(), true);

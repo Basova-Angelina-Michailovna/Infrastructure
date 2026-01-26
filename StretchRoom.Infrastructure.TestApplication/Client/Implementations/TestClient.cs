@@ -119,11 +119,18 @@ public class TestClient(
     {
         var result = await GetAsync<ProblemDetails>(
             url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.ValidateToken),
-            new Dictionary<string, object>
-            {
-                { "Authorization", jwt }
-            }, token);
+            GetAuthHeaders(jwt), token);
 
+        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
+    }
+
+    public async Task ValidateAuthAsync(string jwt, CancellationToken token)
+    {
+        var result = await GetAsync<ProblemDetails>(
+            url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.ValidateAuth),
+            GetAuthHeaders(jwt),
+            token: token);
+        
         if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
     }
 }

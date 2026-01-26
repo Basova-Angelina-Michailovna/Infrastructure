@@ -119,4 +119,13 @@ public class TestController : ControllerBase
         await client.ValidateTokenAsync(token);
         return Ok();
     }
+
+    [HttpGet(ControllerInfo.Methods.ValidateAuth)]
+    public async Task<IActionResult> ValidateAuth(
+        [FromServices] IAuthAppClient client,
+        CancellationToken token)
+    {
+        await client.ValidateAuthAsync(token);
+        return Ok();
+    }
 }

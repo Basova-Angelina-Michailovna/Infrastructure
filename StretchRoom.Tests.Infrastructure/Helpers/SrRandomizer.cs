@@ -1,4 +1,10 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using StretchRoom.Infrastructure.Helpers.Jwt;
+using StretchRoom.Infrastructure.Options;
 
 namespace StretchRoom.Tests.Infrastructure.Helpers;
 
@@ -19,6 +25,15 @@ public class SrRandomizer(int seed = 0)
     public string Chars { get; set; } = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToLower();
 
     private string HexChars { get; } = "ABCDEF1234567890";
+
+    /// <summary>
+    ///     Creates the new instance of <see cref="SrRandomizer" /> with random seed.
+    /// </summary>
+    /// <returns>The new instance of <see cref="SrRandomizer" />.</returns>
+    public static SrRandomizer Create()
+    {
+        return new SrRandomizer();
+    }
 
     /// <summary>
     ///     Gets the random string with specified length.
@@ -381,7 +396,7 @@ public class SrRandomizer(int seed = 0)
             .AddHours(hour)
             .AddMinutes(minute)
             .AddSeconds(second)
-            .ToOffset(TimeSpan.FromHours(Int(-12, 13)));
+            .ToOffset(System.TimeSpan.FromHours(Int(-12, 13)));
     }
 
     /// <summary>
@@ -438,5 +453,125 @@ public class SrRandomizer(int seed = 0)
     {
         var values = System.Enum.GetValues<TEnum>();
         return RandomElements(values, count);
+    }
+
+    /// <summary>
+    ///     Generates the random timespan.
+    /// </summary>
+    /// <returns>The new instance of <see cref="System.TimeSpan" />.</returns>
+    public TimeSpan TimeSpan(TimeSpan minValue, TimeSpan maxValue)
+    {
+        return new TimeSpan(Long(minValue.Ticks, maxValue.Ticks));
+    }
+
+    /// <summary>
+    ///     Generates the random timespan.
+    /// </summary>
+    /// <returns>The new instance of <see cref="System.TimeSpan" />.</returns>
+    public TimeSpan TimeSpan(TimeSpan minValue)
+    {
+        return TimeSpan(minValue, System.TimeSpan.MaxValue);
+    }
+
+    /// <summary>
+    ///     Generates the random timespan.
+    /// </summary>
+    /// <returns>The new instance of <see cref="System.TimeSpan" />.</returns>
+    public TimeSpan TimeSpan()
+    {
+        return TimeSpan(System.TimeSpan.MinValue, System.TimeSpan.MaxValue);
+    }
+
+    /// <summary>
+    ///     Generates the random JWT with specified <paramref name="opts" />.
+    /// </summary>
+    /// <returns>The random jwt with prefix <c>Bearer {token}</c>.</returns>
+    public string Jwt(JwtOptions opts)
+    {
+        return Jwt(opts, StringArray().Select(x => x.ToClaim(String())));
+    }
+
+    /// <summary>
+    ///     Generates the random JWT with specified <paramref name="opts" />.
+    /// </summary>
+    /// <returns>The random jwt with prefix <c>Bearer {token}</c>.</returns>
+    public string Jwt(JwtOptions opts, IEnumerable<Claim> claims)
+    {
+        var tokenGenerator = new RandomJwtGenerator(opts);
+        return tokenGenerator.GenerateKey(claims);
+    }
+
+    /// <summary>
+    ///     Generates the random JWT.
+    /// </summary>
+    /// <returns>The random jwt with prefix <c>Bearer {token}</c>.</returns>
+    public string Jwt(params Claim[] claims)
+    {
+        var opts = JwtOptions();
+        return Jwt(opts, claims);
+    }
+
+    /// <summary>
+    ///     Generates the random JWT.
+    /// </summary>
+    /// <returns>The random jwt with prefix <c>Bearer {token}</c>.</returns>
+    public string Jwt()
+    {
+        return Jwt(JwtOptions());
+    }
+
+    /// <summary>
+    ///     Generates the random <see cref="JwtOptions" />.
+    /// </summary>
+    /// <returns>The new instance of <see cref="JwtOptions" />.</returns>
+    public JwtOptions JwtOptions()
+    {
+        return RandomJwtGenerator.GenerateRandomOptions(this);
+    }
+
+    /// <summary>
+    ///     The <see cref="RandomJwtGenerator" /> class.
+    /// </summary>
+    /// <param name="options">The jwt options.</param>
+    private class RandomJwtGenerator(JwtOptions options) : IJwtGenerator
+    {
+        /// <summary>
+        ///     The auth schema.
+        /// </summary>
+        private const string AuthSchema = JwtBearerDefaults.AuthenticationScheme;
+
+        /// <inheritdoc />
+        public string GenerateKey(params IEnumerable<Claim> claims)
+        {
+            DateTime? expires = null;
+            if (options.TokenTimeToLive.HasValue && options.TokenTimeToLive.Value > System.TimeSpan.Zero)
+                expires = System.DateTime.UtcNow.Add(options.TokenTimeToLive.Value);
+
+            var key = new SymmetricSecurityKey(Convert.FromBase64String(options.Base64Key));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var jwt = new JwtSecurityToken
+            (
+                options.Issuer,
+                options.Audience,
+                claims,
+                null,
+                expires,
+                credentials
+            );
+            return $"{AuthSchema} {new JwtSecurityTokenHandler().WriteToken(jwt)}";
+        }
+
+        public static JwtOptions GenerateRandomOptions(SrRandomizer randomizer)
+        {
+            return new JwtOptions
+            {
+                Audience = randomizer.String(32),
+                Issuer = randomizer.String(32),
+                Base64Key = randomizer.HexString(128),
+                TokenTimeToLive = randomizer.Int(0, 2) % 2 == 0
+                    ? null
+                    : randomizer.TimeSpan(System.TimeSpan.FromMinutes(15), System.TimeSpan.FromHours(24))
+            };
+        }
     }
 }

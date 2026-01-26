@@ -45,9 +45,9 @@ public static class SrObjectExtensions
     extension(object obj)
     {
         /// <summary>
-        ///     Serializes the <paramref name="obj" /> to diagnostic json string.
+        ///     Serializes the <paramref name="obj" /> to diagnostic JSON string.
         /// </summary>
-        /// <returns>The serialized json string.</returns>
+        /// <returns>The serialized JSON string.</returns>
         public string ToDiagnosticJson()
         {
             var json = JsonSerializer.Serialize(obj, DiagnosticJsonOptions);
@@ -55,9 +55,9 @@ public static class SrObjectExtensions
         }
 
         /// <summary>
-        ///     Serializes the <paramref name="obj" /> to default json string.
+        ///     Serializes the <paramref name="obj" /> to default JSON string.
         /// </summary>
-        /// <returns>The serialized json string.</returns>
+        /// <returns>The serialized JSON string.</returns>
         public string ToJson()
         {
             var json = JsonSerializer.Serialize(obj, DefaultJsonOptions);

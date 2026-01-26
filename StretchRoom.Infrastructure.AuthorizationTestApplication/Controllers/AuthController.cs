@@ -26,7 +26,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost(RoutesDictionary.AuthControllerV1.Methods.ValidateToken)]
-    [Authorize]
+    [AllowAnonymous]
     public IActionResult ValidateToken()
     {
         if (!Request.Headers.TryGetValue(AuthHeader, out var value))
@@ -47,6 +47,13 @@ public class AuthController : ControllerBase
                 Title = "Unauthorized"
             });
 
+        return Ok();
+    }
+
+    [HttpGet(RoutesDictionary.AuthControllerV1.Methods.ValidateAuth)]
+    [Authorize]
+    public IActionResult ValidateAuth()
+    {
         return Ok();
     }
 }

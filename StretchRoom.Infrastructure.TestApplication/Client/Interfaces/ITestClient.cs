@@ -17,4 +17,5 @@ public interface ITestClient
 
     Task<GenerateTokenResponse> GenerateTokenAsync(CancellationToken token);
     Task ValidateTokenAsync(string jwt, CancellationToken token);
+    Task ValidateAuthAsync(string jwt, CancellationToken token);
 }

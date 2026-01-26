@@ -1,4 +1,9 @@
+using System.Security.Claims;
 using AwesomeAssertions;
+using Microsoft.Extensions.Logging;
+using NSubstitute;
+using StretchRoom.Infrastructure.Helpers.Jwt;
+using StretchRoom.Infrastructure.Options;
 using StretchRoom.Tests.Infrastructure.Helpers;
 
 namespace StretchRoom.Infrastructure.UnitTests.Helpers;
@@ -189,6 +194,54 @@ public class SrRandomizerTests
         var val = _randomizer.Enums<TestEnum>(numOfElementsToTake);
 
         enums.Should().Contain(val);
+    }
+
+    [TestCaseSource(nameof(GetTestTimeSpans))]
+    public void When_RandomTimeSpans_With_SpecifiedMinAndMaxVals_Result_ValidGenerates(
+        TimeSpan min, TimeSpan max)
+    {
+        for (var i = 0; i < 100; i++)
+        {
+            var random = _randomizer.TimeSpan(min, max);
+
+            random.Should().BeGreaterThanOrEqualTo(min).And.BeLessThanOrEqualTo(max);
+
+            var random2 = _randomizer.TimeSpan(min);
+            random2.Should().BeGreaterThanOrEqualTo(min).And.BeLessThanOrEqualTo(TimeSpan.MaxValue);
+
+            var random3 = _randomizer.TimeSpan();
+            random3.Should().BeGreaterThanOrEqualTo(TimeSpan.MinValue).And.BeLessThanOrEqualTo(TimeSpan.MaxValue);
+        }
+    }
+
+    [TestCaseSource(nameof(GetJwts))]
+    public void When_RandomJwts_With_SpecifiedClaimsAndOpts_Result_ValidGenerates(
+        JwtOptions opts, Claim[] claims)
+    {
+        var tokenValidator = new JwtValidator(Substitute.For<ILogger<JwtValidator>>());
+
+        var jwt = _randomizer.Jwt(opts, claims);
+
+        var validationResult = tokenValidator.TryValidate(jwt, out var jwtValidationResults);
+        validationResult.Should().BeTrue();
+        jwtValidationResults!.Issuer.Should().BeEquivalentTo(opts.Issuer);
+        jwtValidationResults.Claims.Should().Contain(c => claims.Any(x => x.Value == c.Value && x.Type == c.Type));
+        jwtValidationResults.Audiences.Should().Contain(x => x == opts.Audience);
+    }
+
+    private static IEnumerable<TestCaseData<TimeSpan, TimeSpan>> GetTestTimeSpans()
+    {
+        yield return new TestCaseData<TimeSpan, TimeSpan>(TimeSpan.Zero, TimeSpan.MaxValue);
+        yield return new TestCaseData<TimeSpan, TimeSpan>(TimeSpan.FromHours(1), TimeSpan.FromHours(2));
+    }
+
+    private static IEnumerable<TestCaseData<JwtOptions, Claim[]>> GetJwts()
+    {
+        var random = SrRandomizer.Create();
+        yield return new TestCaseData<JwtOptions, Claim[]>(random.JwtOptions(),
+            [random.String().ToClaim(random.String())]);
+        yield return new TestCaseData<JwtOptions, Claim[]>(random.JwtOptions(),
+            random.StringArray(32, 10).Select(x => x.ToClaim(random.String())).ToArray());
     }
 }
 

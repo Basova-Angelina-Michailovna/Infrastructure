@@ -40,11 +40,26 @@ public class AuthClientTests
     }
 
     [Test]
-    public async Task When_ValidateToken_With_RandomToken_Result_Unauthorized()
+    public async Task When_ValidateToken_With_RandomToken_Result_Forbidden()
     {
-        var act = () => _client.TestClient.ValidateTokenAsync(Randomizer.String(64), CancellationToken.None);
+        var act = () => _client.TestClient.ValidateTokenAsync(Randomizer.Jwt(), CancellationToken.None);
 
         (await act.Should().ThrowAsync<ApiException>())
             .And.ProblemDetails.Status.Should().Be(StatusCodes.Status403Forbidden);
+    }
+
+    [Test]
+    public async Task When_ValidateAuth_With_TokenAndWithout_Result_FirstUnauthorizedSecondOk()
+    {
+        var act = () => _client.TestClient.ValidateAuthAsync(Randomizer.Jwt(), CancellationToken.None);
+        
+        (await act.Should().ThrowAsync<ApiException>())
+            .And.ProblemDetails.Status.Should().Be(StatusCodes.Status401Unauthorized);
+        
+        var token =  await _client.TestClient.GenerateTokenAsync(CancellationToken.None);
+        
+        var act2 = () => _client.TestClient.ValidateAuthAsync(token.Token, CancellationToken.None);
+
+        await act2.Should().NotThrowAsync();
     }
 }

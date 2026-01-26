@@ -13,6 +13,8 @@ public interface IAuthAppClient
         CancellationToken token = default);
 
     Task ValidateTokenAsync(CancellationToken token = default);
+
+    Task ValidateAuthAsync(CancellationToken token = default);
 }
 
 public class AuthAppClient(
@@ -45,5 +47,13 @@ public class AuthAppClient(
             token: token);
 
         if (!response.IsSuccess) ApiExceptionHelper.ThrowApiException(response.Error);
+    }
+
+    public async Task ValidateAuthAsync(CancellationToken token = default)
+    {
+        var response = await GetAsync<ProblemDetails>(
+            url => url.AppendPathSegments(BaseRoute, Methods.ValidateAuth), token: token);
+        
+        if (!response.IsSuccess) ApiExceptionHelper.ThrowApiException(response.Error, response.StatusCode);
     }
 }

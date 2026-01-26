@@ -25,6 +25,7 @@ public static class RoutesDictionary
 
             public const string GetToken = "token";
             public const string ValidateToken = "validate/token";
+            public const string ValidateAuth = "validate/auth";
         }
     }
 }

@@ -43,7 +43,7 @@ public class ClientBaseRegistrationRegistrator<TInterface, TImplementation>(ISer
     where TImplementation : ClientBase, TInterface where TInterface : class
 {
     private Func<string>? _baseUrlResolver;
-    private Func<IServiceProvider, IFlurlClientCache>? _flurlClientCacheResolver;
+    private Func<IServiceProvider, IEnumerable<Func<DelegatingHandler>>, IFlurlClientCache>? _flurlClientCacheResolver;
     private Func<Task<string>>? _tokenResolver;
     private bool _useClientTokenManager;
 
@@ -109,7 +109,7 @@ public class ClientBaseRegistrationRegistrator<TInterface, TImplementation>(ISer
     /// <param name="clientCacheResolver">The client cache resolver.</param>
     /// <returns></returns>
     public ClientBaseRegistrationRegistrator<TInterface, TImplementation> ConfigureClientCache(
-        Func<IServiceProvider, IFlurlClientCache> clientCacheResolver)
+        Func<IServiceProvider, IEnumerable<Func<DelegatingHandler>>, IFlurlClientCache> clientCacheResolver)
     {
         _flurlClientCacheResolver = clientCacheResolver;
         return this;
@@ -124,9 +124,18 @@ public class ClientBaseRegistrationRegistrator<TInterface, TImplementation>(ISer
         if (_baseUrlResolver is null) throw new InvalidOperationException("No service url resolver has been set");
 
         if (_flurlClientCacheResolver is not null)
-            services.TryAddSingleton<IFlurlClientCache>(sp => _flurlClientCacheResolver(sp));
+            services.TryAddSingleton<IFlurlClientCache>(sp =>
+                _flurlClientCacheResolver(sp, sp.GetServices<Func<DelegatingHandler>>()));
         else
-            services.TryAddSingleton<IFlurlClientCache, FlurlClientCache>();
+            services.TryAddSingleton<IFlurlClientCache>(sp =>
+            {
+                var middlewares = sp.GetServices<Func<DelegatingHandler>>();
+                var cache = new FlurlClientCache().WithDefaults(conf =>
+                {
+                    foreach (var middleware in middlewares) conf.AddMiddleware(middleware);
+                });
+                return cache;
+            });
 
         if (_tokenResolver is not null)
         {

@@ -110,6 +110,7 @@ public struct OperationResult<TResponse, TError>
 ///     The <see cref="OperationResult{TError}" /> struct.
 /// </summary>
 /// <typeparam name="TError">The error response type.</typeparam>
+[PublicAPI]
 public struct OperationResult<TError>
     where TError : class
 {
@@ -138,7 +139,6 @@ public struct OperationResult<TError>
     /// <summary>
     ///     Creates the success result with specified result.
     /// </summary>
-    /// <param name="result">The result.</param>
     /// <param name="statusCode">The status code.</param>
     /// <returns>The new instance of <see cref="OperationResult{TResponse,TError}" />.</returns>
     public static OperationResult<TError> Success(int statusCode = -1)
