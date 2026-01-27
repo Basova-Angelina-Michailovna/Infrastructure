@@ -24,7 +24,7 @@ public class TestClient(
         var result = await GetAsync<ProblemDetails>(
             url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.GetOk), token: token);
 
-        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
+        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result);
     }
 
     public async Task GetExceptionAsync(CancellationToken token)
@@ -33,7 +33,7 @@ public class TestClient(
             url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.GetException),
             token: token);
 
-        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
+        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result);
     }
 
     public async Task<SomeBodyResponse> PostBodyAsync(SomeBodyRequest body, CancellationToken token)
@@ -44,7 +44,7 @@ public class TestClient(
             token: token);
         if (result is { IsSuccess: true, Result: not null }) return result.Result;
 
-        return ApiExceptionHelper.ThrowApiException<SomeBodyResponse>(result.Error, result.StatusCode);
+        return ApiExceptionHelper.ThrowApiException(result);
     }
 
     public async Task<SomeBodyResponse> GetQueryAsync(int value, CancellationToken token)
@@ -56,7 +56,7 @@ public class TestClient(
 
         if (result is { IsSuccess: true, Result: not null }) return result.Result;
 
-        return ApiExceptionHelper.ThrowApiException<SomeBodyResponse>(result.Error, result.StatusCode);
+        return ApiExceptionHelper.ThrowApiException(result);
     }
 
     public async Task<CommandResultResponse> PostCommandAsync(string name, CancellationToken token)
@@ -68,7 +68,7 @@ public class TestClient(
 
         if (result is { IsSuccess: true, Result: not null }) return result.Result;
 
-        return ApiExceptionHelper.ThrowApiException<CommandResultResponse>(result.Error, result.StatusCode);
+        return ApiExceptionHelper.ThrowApiException(result);
     }
 
     public async Task<CommandResultResponse> GetCommandAsync(CancellationToken token)
@@ -79,7 +79,7 @@ public class TestClient(
 
         if (result is { IsSuccess: true, Result: not null }) return result.Result;
 
-        return ApiExceptionHelper.ThrowApiException<CommandResultResponse>(result.Error, result.StatusCode);
+        return ApiExceptionHelper.ThrowApiException(result);
     }
 
     public async Task DeleteCommandAsync(string name, CancellationToken token)
@@ -89,7 +89,7 @@ public class TestClient(
                 .AppendQueryParam("name", name),
             token: token);
 
-        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
+        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result);
     }
 
     public async Task PutCommandAsync(string name, ChangeNameRequest request, CancellationToken token)
@@ -100,7 +100,7 @@ public class TestClient(
             request,
             token: token);
 
-        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
+        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result);
     }
 
     public async Task<GenerateTokenResponse> GenerateTokenAsync(CancellationToken token)
@@ -110,7 +110,7 @@ public class TestClient(
             token: token);
 
         if (!result.IsSuccess || result.Result is null)
-            return ApiExceptionHelper.ThrowApiException<GenerateTokenResponse>(result.Error, result.StatusCode);
+            return ApiExceptionHelper.ThrowApiException(result);
 
         return result.Result;
     }
@@ -121,7 +121,7 @@ public class TestClient(
             url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.ValidateToken),
             GetAuthHeaders(jwt), token);
 
-        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
+        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result);
     }
 
     public async Task ValidateAuthAsync(string jwt, CancellationToken token)
@@ -129,8 +129,8 @@ public class TestClient(
         var result = await GetAsync<ProblemDetails>(
             url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.ValidateAuth),
             GetAuthHeaders(jwt),
-            token: token);
-        
-        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result.Error, result.StatusCode);
+            token);
+
+        if (!result.IsSuccess) ApiExceptionHelper.ThrowApiException(result);
     }
 }

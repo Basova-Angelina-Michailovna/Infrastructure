@@ -2,6 +2,8 @@ using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using StretchRoom.Infrastructure.Extensions;
+using StretchRoom.Infrastructure.HttpClient;
 
 namespace StretchRoom.Infrastructure.Exceptions;
 
@@ -183,5 +185,55 @@ public static class ApiExceptionHelper
         problemDetails.Instance = memberName;
 
         throw new ApiException(problemDetails, problemDetails.Title ?? "Problem details");
+    }
+
+    /// <summary>
+    ///     Throws the api exception created by <paramref name="operationResult" />.
+    /// </summary>
+    /// <param name="operationResult">The operation result.</param>
+    /// <param name="memberName">The member name.</param>
+    /// <typeparam name="TError">The error.</typeparam>
+    /// <exception cref="ApiException">The api exception.</exception>
+    public static void ThrowApiException<TError>(OperationResult<TError> operationResult,
+        [CallerMemberName] string memberName = "") where TError : class
+    {
+        if (operationResult.Error is ProblemDetails problemDetails)
+            ThrowApiException(problemDetails, operationResult.StatusCode, memberName);
+        throw new ApiException(operationResult.StatusCode, operationResult.Error?.ToDiagnosticJson() ?? string.Empty,
+            memberName);
+    }
+
+    /// <summary>
+    ///     Throws the api exception created by <paramref name="operationResult" />.
+    /// </summary>
+    /// <param name="operationResult">The operation result.</param>
+    /// <param name="memberName">The member name.</param>
+    /// <typeparam name="TError">The error.</typeparam>
+    /// <typeparam name="TResult">The result.</typeparam>
+    /// <exception cref="ApiException">The api exception.</exception>
+    public static TResult ThrowApiException<TResult, TError>(OperationResult<TError> operationResult,
+        [CallerMemberName] string memberName = "") where TError : class
+    {
+        if (operationResult.Error is ProblemDetails problemDetails)
+            ThrowApiException(problemDetails, operationResult.StatusCode, memberName);
+        throw new ApiException(operationResult.StatusCode, operationResult.Error?.ToDiagnosticJson() ?? string.Empty,
+            memberName);
+    }
+
+    /// <summary>
+    ///     Throws the api exception created by <paramref name="operationResult" />.
+    /// </summary>
+    /// <param name="operationResult">The operation result.</param>
+    /// <param name="memberName">The member name.</param>
+    /// <typeparam name="TError">The error.</typeparam>
+    /// <typeparam name="TResult">The result.</typeparam>
+    /// <exception cref="ApiException">The api exception.</exception>
+    public static TResult ThrowApiException<TResult, TError>(OperationResult<TResult, TError> operationResult,
+        [CallerMemberName] string memberName = "") where TError : class where TResult : class
+    {
+        if (operationResult.Error is ProblemDetails problemDetails)
+            ThrowApiException(problemDetails, operationResult.StatusCode, memberName);
+        throw new ApiException(operationResult.StatusCode, operationResult.Error?.ToDiagnosticJson() ?? string.Empty,
+            memberName);
     }
 }

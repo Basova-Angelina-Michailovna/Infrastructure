@@ -37,7 +37,7 @@ public class AuthAppClient(
 
         if (response is { IsSuccess: true, Result: not null }) return response.Result;
 
-        return ApiExceptionHelper.ThrowApiException<GenerateTokenResponse>(response.Error);
+        return ApiExceptionHelper.ThrowApiException(response);
     }
 
     public async Task ValidateTokenAsync(CancellationToken token = default)
@@ -46,14 +46,14 @@ public class AuthAppClient(
             url => url.AppendPathSegments(BaseRoute, Methods.ValidateToken),
             token: token);
 
-        if (!response.IsSuccess) ApiExceptionHelper.ThrowApiException(response.Error);
+        if (!response.IsSuccess) ApiExceptionHelper.ThrowApiException(response);
     }
 
     public async Task ValidateAuthAsync(CancellationToken token = default)
     {
         var response = await GetAsync<ProblemDetails>(
             url => url.AppendPathSegments(BaseRoute, Methods.ValidateAuth), token: token);
-        
-        if (!response.IsSuccess) ApiExceptionHelper.ThrowApiException(response.Error, response.StatusCode);
+
+        if (!response.IsSuccess) ApiExceptionHelper.ThrowApiException(response);
     }
 }

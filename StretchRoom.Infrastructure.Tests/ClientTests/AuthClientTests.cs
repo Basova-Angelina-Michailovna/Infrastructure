@@ -52,12 +52,12 @@ public class AuthClientTests
     public async Task When_ValidateAuth_With_TokenAndWithout_Result_FirstUnauthorizedSecondOk()
     {
         var act = () => _client.TestClient.ValidateAuthAsync(Randomizer.Jwt(), CancellationToken.None);
-        
+
         (await act.Should().ThrowAsync<ApiException>())
             .And.ProblemDetails.Status.Should().Be(StatusCodes.Status401Unauthorized);
-        
-        var token =  await _client.TestClient.GenerateTokenAsync(CancellationToken.None);
-        
+
+        var token = await _client.TestClient.GenerateTokenAsync(CancellationToken.None);
+
         var act2 = () => _client.TestClient.ValidateAuthAsync(token.Token, CancellationToken.None);
 
         await act2.Should().NotThrowAsync();
