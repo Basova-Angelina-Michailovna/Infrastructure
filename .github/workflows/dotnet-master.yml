@@ -75,14 +75,15 @@ jobs:
       - name: Restore all projects
         run: dotnet restore
 
-      - name: Detect and pack packable projects
-        run: |
-          for proj in $(find . -name '*.csproj'); do
-            if grep -q "<IsPackable>true</IsPackable>" "$proj"; then
-              echo "Packing project: $proj"
-              dotnet pack "$proj" -p:PackageVersion=${{ env.VERSION }} -o ./artifacts
-            fi
-          done
+      - name: Build and Pack
+          run: |
+            for proj in $(find . -name '*.csproj'); do
+              if grep -q "<IsPackable>true</IsPackable>" "$proj"; then
+                # Building here ensures the files exist for the pack command
+                dotnet build "$proj" -c Release -p:Version=${{ env.VERSION }}
+                dotnet pack "$proj" -c Release -p:PackageVersion=${{ env.VERSION }} -o ./artifacts --no-build
+              fi
+            done
 
       - name: Publish packages to GitHub Packages
         run: |
