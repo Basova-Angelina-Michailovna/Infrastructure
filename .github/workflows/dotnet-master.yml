@@ -80,7 +80,7 @@ jobs:
           for proj in $(find . -name '*.csproj'); do
             if grep -q "<IsPackable>true</IsPackable>" "$proj"; then
               echo "Packing project: $proj"
-              dotnet pack "$proj" --no-build -p:PackageVersion=${{ env.VERSION }} -o ./artifacts
+              dotnet pack "$proj" -p:PackageVersion=${{ env.VERSION }} -o ./artifacts
             fi
           done
 
