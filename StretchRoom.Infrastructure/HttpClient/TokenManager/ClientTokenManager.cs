@@ -30,7 +30,11 @@ public class FromContextClientTokenManager<TInterface>(IHttpContextAccessor cont
     public Task<string?> GetTokenAsync()
     {
         if (contextAccessor.HttpContext?.Request.Headers.TryGetValue("Authorization", out var token) ??
-            false) return Task.FromResult((string?)token);
+            false)
+        {
+            return Task.FromResult((string?)token);
+        }
+
         return Task.FromResult<string?>(null);
     }
 }

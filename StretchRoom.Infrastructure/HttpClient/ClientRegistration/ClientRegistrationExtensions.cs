@@ -121,21 +121,31 @@ public class ClientBaseRegistrationRegistrator<TInterface, TImplementation>(ISer
     /// <exception cref="InvalidOperationException"></exception>
     public void Register()
     {
-        if (_baseUrlResolver is null) throw new InvalidOperationException("No service url resolver has been set");
+        if (_baseUrlResolver is null)
+        {
+            throw new InvalidOperationException("No service url resolver has been set");
+        }
 
         if (_flurlClientCacheResolver is not null)
+        {
             services.TryAddSingleton<IFlurlClientCache>(sp =>
                 _flurlClientCacheResolver(sp, sp.GetServices<Func<DelegatingHandler>>()));
+        }
         else
+        {
             services.TryAddSingleton<IFlurlClientCache>(sp =>
             {
                 var middlewares = sp.GetServices<Func<DelegatingHandler>>();
                 var cache = new FlurlClientCache().WithDefaults(conf =>
                 {
-                    foreach (var middleware in middlewares) conf.AddMiddleware(middleware);
+                    foreach (var middleware in middlewares)
+                    {
+                        conf.AddMiddleware(middleware);
+                    }
                 });
                 return cache;
             });
+        }
 
         if (_tokenResolver is not null)
         {
@@ -147,10 +157,16 @@ public class ClientBaseRegistrationRegistrator<TInterface, TImplementation>(ISer
         services.AddSingleton<TInterface, TImplementation>(sp =>
         {
             if (_tokenResolver is not null)
+            {
                 return ActivatorUtilities.CreateInstance<TImplementation>(sp, _baseUrlResolver, _tokenResolver);
+            }
+
             if (_useClientTokenManager)
+            {
                 return ActivatorUtilities.CreateInstance<TImplementation>(sp, _baseUrlResolver,
                     GetTokenResolverWithTokenManager(sp));
+            }
+
             return ActivatorUtilities.CreateInstance<TImplementation>(sp, _baseUrlResolver);
         });
     }

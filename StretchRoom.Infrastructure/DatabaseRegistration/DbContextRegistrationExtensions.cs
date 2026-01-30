@@ -39,9 +39,15 @@ public static class DbContextRegistrationExtensions
         {
             opts.UseNpgsql(options.ConnectionString, builder =>
             {
-                if (options.Retries is not null) builder.EnableRetryOnFailure(options.Retries.Value);
+                if (options.Retries is not null)
+                {
+                    builder.EnableRetryOnFailure(options.Retries.Value);
+                }
 
-                if (options.Timeout is not null) builder.CommandTimeout(options.Timeout.Value.Seconds);
+                if (options.Timeout is not null)
+                {
+                    builder.CommandTimeout(options.Timeout.Value.Seconds);
+                }
             });
         }
     }

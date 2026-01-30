@@ -41,7 +41,10 @@ public sealed class ConfiguredApp(IWebHostBuilder builder) : IDisposable, IAsync
     public async Task BuildAndRunAsync(Action<IConfigurationBuilder>? configureConf = null,
         CancellationToken token = default)
     {
-        if (configureConf is not null) builder.ConfigureAppConfiguration(configureConf);
+        if (configureConf is not null)
+        {
+            builder.ConfigureAppConfiguration(configureConf);
+        }
 
         _app = builder.Build();
 

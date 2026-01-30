@@ -26,7 +26,8 @@ internal class AppTestContext
     {
         Trace.Listeners.Add(new ConsoleTraceListener());
 
-        _postgres = new PostgreSqlBuilder().WithDatabase(DatabaseName).WithUsername(DbUser).WithPassword(DbPassword)
+        _postgres = new PostgreSqlBuilder() /*.WithDatabase(DatabaseName)*/.WithUsername(DbUser)
+            .WithPassword(DbPassword)
             .Build();
         await _postgres.StartAsync();
 
@@ -59,7 +60,7 @@ internal class AppTestContext
             {
                 builder.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    { "ConnectionStrings:TestApplication", _postgres.GetConnectionString() },
+                    { "ConnectionStrings:TestApplication", $"{_postgres.GetConnectionString()};Database=dev-db" },
                     { "auth-service:ServiceUrl", AuthAppClientContext.BaseAddress }
                 });
             };

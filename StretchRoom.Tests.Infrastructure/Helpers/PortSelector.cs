@@ -17,7 +17,11 @@ public static class PortSelector
     public static int GetPort(int port = 0)
     {
         port = port > 0 ? port : new Random().Next(1, 65535);
-        while (!IsFree(port)) port += 1;
+        while (!IsFree(port))
+        {
+            port += 1;
+        }
+
         return port;
     }
 

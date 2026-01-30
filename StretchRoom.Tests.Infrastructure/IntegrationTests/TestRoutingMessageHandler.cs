@@ -22,7 +22,10 @@ public class TestRoutingMessageHandler : DelegatingHandler
     {
         var host = $"{request.RequestUri!.Scheme}://{request.RequestUri.Host}:{request.RequestUri.Port}/";
 
-        if (_hosts.TryGetValue(host, out var handler)) return await handler.SendRequest(request, cancellationToken);
+        if (_hosts.TryGetValue(host, out var handler))
+        {
+            return await handler.SendRequest(request, cancellationToken);
+        }
 
         if (RouteConfiguration.Routes.TryGetValue(host, out var route))
         {

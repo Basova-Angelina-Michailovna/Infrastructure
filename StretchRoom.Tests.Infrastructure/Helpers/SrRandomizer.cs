@@ -242,7 +242,11 @@ public class SrRandomizer(int seed = 0)
     /// <returns>The new array of <typeparamref name="T" />.</returns>
     public T[] Array<T>(Func<int, SrRandomizer, T> conf, uint length = 0)
     {
-        if (length == 0) length = UInt(0, 256);
+        if (length == 0)
+        {
+            length = UInt(0, 256);
+        }
+
         return Enumerable.Range(0, (int)length)
             .Select(ind => conf(ind, this)).ToArray();
     }
@@ -545,7 +549,9 @@ public class SrRandomizer(int seed = 0)
         {
             DateTime? expires = null;
             if (options.TokenTimeToLive.HasValue && options.TokenTimeToLive.Value > System.TimeSpan.Zero)
+            {
                 expires = System.DateTime.UtcNow.Add(options.TokenTimeToLive.Value);
+            }
 
             var key = new SymmetricSecurityKey(Convert.FromBase64String(options.Base64Key));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

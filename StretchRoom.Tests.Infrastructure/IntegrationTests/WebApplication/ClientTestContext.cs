@@ -51,7 +51,10 @@ public abstract class ClientTestContext<TClient, TEntrypoint> : ServiceTestConte
         var clientsCache = new FlurlClientCache();
         clientsCache.WithDefaults(x =>
         {
-            foreach (var middleware in middlewares) x.AddMiddleware(middleware);
+            foreach (var middleware in middlewares)
+            {
+                x.AddMiddleware(middleware);
+            }
         });
         return clientsCache;
     }
@@ -83,18 +86,30 @@ public abstract class ServiceTestContext<TEntrypoint> where TEntrypoint : class
     public virtual void Initialize(Action<TestClientInitializeOptions>? configurator = null)
     {
         if (_isInitialized)
+        {
             return;
+        }
+
         var opts = new TestClientInitializeOptions();
-        if (configurator != null) configurator(opts);
+        if (configurator != null)
+        {
+            configurator(opts);
+        }
+
         var appFactory = CreateWebApplicationFactory();
         appFactory.UseProductionAppSettings = opts.UseProductionAppSettings;
-        if (opts.BaseAddress != null) appFactory.BaseAddress = opts.BaseAddress;
+        if (opts.BaseAddress != null)
+        {
+            appFactory.BaseAddress = opts.BaseAddress;
+        }
 
         BaseAddress = appFactory.BaseAddress.ToString();
         Factory = appFactory.WithWebHostBuilder(x =>
         {
             if (!opts.SolutionRelativePath.IsNullOrWhiteSpace())
+            {
                 x.UseSolutionRelativeContentRoot(opts.SolutionRelativePath!);
+            }
 
             x.ConfigureServices(services =>
             {
@@ -106,7 +121,10 @@ public abstract class ServiceTestContext<TEntrypoint> where TEntrypoint : class
                     c.AddRoute(BaseAddress, Factory.Server.CreateHandler));
             });
             var builderConf = opts.BuilderConfiguration;
-            if (builderConf != null) builderConf(x);
+            if (builderConf != null)
+            {
+                builderConf(x);
+            }
         });
         Factory.CreateClient();
         Factory.Services.ExecuteAllBeforeHostingStarted().GetAwaiter().GetResult();
@@ -118,7 +136,11 @@ public abstract class ServiceTestContext<TEntrypoint> where TEntrypoint : class
     /// </summary>
     public virtual void Teardown()
     {
-        if (!_isInitialized) return;
+        if (!_isInitialized)
+        {
+            return;
+        }
+
         Factory.Dispose();
         _isInitialized = false;
         FlurlHttp.Clients.Clear();
@@ -176,7 +198,10 @@ public class RoutingMessageHandler : DelegatingHandler
     /// <inheritdoc />
     public RoutingMessageHandler(IOptions<RoutingMessageHandlerConfiguration> opts)
     {
-        foreach (var route in opts.Value.Routes) AddHandler(route.Key, route.Value);
+        foreach (var route in opts.Value.Routes)
+        {
+            AddHandler(route.Key, route.Value);
+        }
     }
 
     private void AddHandler(Uri origin, Func<HttpMessageHandler> handler)
@@ -200,7 +225,9 @@ public class RoutingMessageHandler : DelegatingHandler
         {
             var handler = lazyHandler.Value;
             if (!ReplaceHttpHandlerByTest(InnerHandler, handler))
+            {
                 return handler.SendRequest(request, cancellationToken);
+            }
         }
 
         return base.SendAsync(request, cancellationToken);
@@ -210,12 +237,22 @@ public class RoutingMessageHandler : DelegatingHandler
         HttpMessageHandler? innerHandler,
         HostHandler handler)
     {
-        if (innerHandler is not DelegatingHandler delegatingHandler) return false;
+        if (innerHandler is not DelegatingHandler delegatingHandler)
+        {
+            return false;
+        }
+
         var msgHandler = delegatingHandler.InnerHandler;
-        while (msgHandler is DelegatingHandler msgDelegatingHandler) msgHandler = msgDelegatingHandler.InnerHandler;
+        while (msgHandler is DelegatingHandler msgDelegatingHandler)
+        {
+            msgHandler = msgDelegatingHandler.InnerHandler;
+        }
 
         if (delegatingHandler != handler && delegatingHandler.InnerHandler != handler)
+        {
             delegatingHandler.InnerHandler = handler;
+        }
+
         return true;
     }
 

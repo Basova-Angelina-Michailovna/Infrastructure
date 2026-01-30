@@ -3,9 +3,11 @@ using Asp.Versioning;
 using EBCEYS.ContainersEnvironment.HealthChecks.Extensions;
 using HealthChecks.ApplicationStatus.DependencyInjection;
 using JetBrains.Annotations;
+using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -76,9 +78,20 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             opts.Filters.Add<ApiExceptionFilter>();
             ConfigureFilters(opts.Filters);
         });
+        services.AddProblemDetails(options =>
+        {
+            options.CustomizeProblemDetails = ctx =>
+            {
+                // Always include useful metadata
+                ctx.ProblemDetails.Extensions["traceId"] = ctx.HttpContext.TraceIdentifier;
+                ctx.ProblemDetails.Extensions["timestamp"] = DateTime.UtcNow;
+                ctx.ProblemDetails.Instance = $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}";
+            };
+        });
         services.AddHttpContextAccessor();
 
         services.AddFluentValidationAutoValidation();
+        services.AddFluentValidationRulesToSwagger();
 
         services.AddRouting(opts => { opts.LowercaseUrls = true; });
         services.AddProblemDetails(opts =>
@@ -121,24 +134,41 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
     /// <param name="env"></param>
     public void Configure(IApplicationBuilder app, IHostEnvironment env)
     {
-        if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
 
+        app.UseRequestLogging();
+
+        app.UseStatusCodePages(async ctx =>
+        {
+            var problemDetails = ctx.HttpContext.RequestServices.GetRequiredService<IProblemDetailsService>();
+            var problemDetailsContext = new ProblemDetailsContext
+            {
+                HttpContext = ctx.HttpContext,
+                ProblemDetails = ProblemDetails.CreateFromResponse(ctx.HttpContext.Response)
+            };
+            await problemDetails.TryWriteAsync(problemDetailsContext);
+        });
         app.UsePathBase(ServiceApiInfo.BaseAddress);
         app.UseRouting();
         app.UseCors(c => c.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod());
 
-        app.UseRequestLogging();
-
+        app.UseExceptionCatcher();
+        
         app.UseMetricServer();
         app.UseHttpMetrics();
-
-        app.UseExceptionCatcher();
         app.UseRequestMetrics();
 
         if (HealthCheckPort is null)
+        {
             app.ConfigureHealthChecks();
+        }
         else
+        {
             app.ConfigureHealthChecks(HealthCheckPort.Value);
+        }
 
         if (UseAuthentication)
         {
@@ -150,7 +180,10 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
         app.UseSwaggerUI(opts =>
         {
             foreach (var apiVersion in ServiceApiInfo.ApiVersions)
+            {
                 opts.SwaggerEndpoint($"{ServiceApiInfo.BaseAddress}/swagger/{apiVersion}/swagger.json", apiVersion);
+            }
+
             opts.DocumentTitle = ServiceApiInfo.ServiceName;
             opts.DocumentTitle = ServiceApiInfo.Description;
         });
@@ -236,12 +269,15 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
         services.AddSwaggerGen(opts =>
         {
             foreach (var apiVersion in ServiceApiInfo.ApiVersions)
+            {
                 opts.SwaggerDoc(apiVersion, new OpenApiInfo
                 {
                     Title = $"{ServiceApiInfo.ServiceName} - {apiVersion}",
                     Description = ServiceApiInfo.Description,
                     Version = apiVersion
                 });
+            }
+
             opts.DocInclusionPredicate((docName, apiDesc) => apiDesc.GroupName == docName);
             if (UseAuthentication)
             {

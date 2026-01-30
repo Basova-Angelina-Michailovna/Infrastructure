@@ -46,6 +46,8 @@ public static class BeforeHostingStartedServiceExtensions
     {
         var beforeHostingStartedServices = services.GetServices<IBeforeHostingStartedService>();
         foreach (var beforeHostingStartedService in beforeHostingStartedServices)
+        {
             await beforeHostingStartedService.ExecuteAsync(token);
+        }
     }
 }

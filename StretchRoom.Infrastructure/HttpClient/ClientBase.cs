@@ -494,8 +494,16 @@ public abstract class ClientBase
             headers.Add(AuthorizationHeader, token);
         }
 
-        if (additionalHeaders == null) return headers;
-        foreach (var header in additionalHeaders) headers.Add(header.Key, header.Value);
+        if (additionalHeaders == null)
+        {
+            return headers;
+        }
+
+        foreach (var header in additionalHeaders)
+        {
+            headers.Add(header.Key, header.Value);
+        }
+
         return headers;
     }
 

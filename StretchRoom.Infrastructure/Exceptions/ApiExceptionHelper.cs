@@ -198,7 +198,10 @@ public static class ApiExceptionHelper
         [CallerMemberName] string memberName = "") where TError : class
     {
         if (operationResult.Error is ProblemDetails problemDetails)
+        {
             ThrowApiException(problemDetails, operationResult.StatusCode, memberName);
+        }
+
         throw new ApiException(operationResult.StatusCode, operationResult.Error?.ToDiagnosticJson() ?? string.Empty,
             memberName);
     }
@@ -215,7 +218,10 @@ public static class ApiExceptionHelper
         [CallerMemberName] string memberName = "") where TError : class
     {
         if (operationResult.Error is ProblemDetails problemDetails)
+        {
             ThrowApiException(problemDetails, operationResult.StatusCode, memberName);
+        }
+
         throw new ApiException(operationResult.StatusCode, operationResult.Error?.ToDiagnosticJson() ?? string.Empty,
             memberName);
     }
@@ -232,7 +238,10 @@ public static class ApiExceptionHelper
         [CallerMemberName] string memberName = "") where TError : class where TResult : class
     {
         if (operationResult.Error is ProblemDetails problemDetails)
+        {
             ThrowApiException(problemDetails, operationResult.StatusCode, memberName);
+        }
+
         throw new ApiException(operationResult.StatusCode, operationResult.Error?.ToDiagnosticJson() ?? string.Empty,
             memberName);
     }

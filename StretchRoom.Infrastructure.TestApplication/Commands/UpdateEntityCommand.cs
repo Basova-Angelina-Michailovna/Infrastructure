@@ -23,7 +23,9 @@ public class UpdateEntityCommand(IDbContextFactory<DataModelContext> contextFact
         var existsEntity = await dbContext.TestTable.FirstOrDefaultAsync(t => t.Name == context.CurrentName, token);
 
         if (existsEntity is null)
+        {
             return ApiExceptionHelper.ThrowNotFound<UpdateEntityCommandResult>("Entity not found");
+        }
 
         existsEntity.Name = context.NewName;
         await dbContext.SaveChangesAsync(token);

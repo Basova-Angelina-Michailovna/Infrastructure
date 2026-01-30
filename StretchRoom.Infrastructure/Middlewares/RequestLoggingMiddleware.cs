@@ -139,7 +139,9 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
     private async Task<string> ReadRequestBody(HttpRequest request)
     {
         if (request.ContentLength is null or 0)
+        {
             return string.Empty;
+        }
 
         try
         {

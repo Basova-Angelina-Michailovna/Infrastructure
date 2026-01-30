@@ -38,7 +38,9 @@ internal class JwtGenerator(IOptions<JwtOptions> options) : IJwtGenerator
     {
         DateTime? expires = null;
         if (options.Value.TokenTimeToLive.HasValue && options.Value.TokenTimeToLive.Value > TimeSpan.Zero)
+        {
             expires = DateTime.UtcNow.Add(options.Value.TokenTimeToLive.Value);
+        }
 
         var key = new SymmetricSecurityKey(Convert.FromBase64String(options.Value.Base64Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

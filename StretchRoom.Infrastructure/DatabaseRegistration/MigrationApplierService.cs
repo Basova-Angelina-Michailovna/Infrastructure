@@ -24,9 +24,14 @@ public class MigrationApplierService<TDbContext>(
     /// <returns></returns>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        if (!opts.Value.MigrateDb) return;
+        if (!opts.Value.MigrateDb)
+        {
+            return;
+        }
+
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        var migrations = await dbContext.Database.GetPendingMigrationsAsync(cancellationToken);
-        if (migrations.Any()) await dbContext.Database.MigrateAsync(cancellationToken);
+        /*var migrations = await dbContext.Database.GetPendingMigrationsAsync(cancellationToken);
+        if (migrations.Any()) */
+        await dbContext.Database.MigrateAsync(cancellationToken);
     }
 }

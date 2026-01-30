@@ -161,7 +161,10 @@ public struct OperationResult<TError>
         IFlurlResponse response)
     {
         var isSuccess = response.ResponseMessage.IsSuccessStatusCode;
-        if (isSuccess) return Success(response.StatusCode);
+        if (isSuccess)
+        {
+            return Success(response.StatusCode);
+        }
 
         var error = await response.GetJsonAsync<TError>();
         return Failure(error, response.StatusCode);

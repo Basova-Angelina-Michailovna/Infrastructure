@@ -147,4 +147,17 @@ internal class TestAppClientTests
         response.Entities.Should().HaveCount(1);
         response.Entities.Should().Contain(e => e.Name == newName);
     }
+
+    [Test]
+    public async Task When_SendNonExistsMethod_With_Result_ApiExceptionAndCode404()
+    {
+        var act = () => _client.TestClient.NonExistsMethodAsync(CancellationToken.None);
+
+        var pd = (await act.Should().ThrowAsync<ApiException>())
+            .And.ProblemDetails;
+        pd.Should().NotBeNull();
+        pd.Status.Should().Be(404);
+        pd.Instance.Should().NotBeEmpty();
+        pd.Title.Should().NotBeEmpty();
+    }
 }

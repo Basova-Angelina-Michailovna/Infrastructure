@@ -30,22 +30,26 @@ public class AuthController : ControllerBase
     public IActionResult ValidateToken()
     {
         if (!Request.Headers.TryGetValue(AuthHeader, out var value))
+        {
             return ApiExceptionHelper.ThrowApiException<IActionResult>(new ProblemDetails
             {
                 Status = StatusCodes.Status403Forbidden,
                 Detail = "Not Authorized",
                 Title = "Unauthorized"
             });
+        }
 
         var token = new JwtSecurityTokenHandler().ReadJwtToken(value.ToString().Replace("Bearer ", ""));
         var usernameClaim = token?.Claims.FirstOrDefault(c => c.Type == GenerateTokenRequest.UserNameClaimType);
         if (usernameClaim is null)
+        {
             return ApiExceptionHelper.ThrowApiException<IActionResult>(new ProblemDetails
             {
                 Status = StatusCodes.Status403Forbidden,
                 Detail = "Not Authorized",
                 Title = "Unauthorized"
             });
+        }
 
         return Ok();
     }
