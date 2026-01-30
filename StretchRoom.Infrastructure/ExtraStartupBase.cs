@@ -78,16 +78,6 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             opts.Filters.Add<ApiExceptionFilter>();
             ConfigureFilters(opts.Filters);
         });
-        services.AddProblemDetails(options =>
-        {
-            options.CustomizeProblemDetails = ctx =>
-            {
-                // Always include useful metadata
-                ctx.ProblemDetails.Extensions["traceId"] = ctx.HttpContext.TraceIdentifier;
-                ctx.ProblemDetails.Extensions["timestamp"] = DateTime.UtcNow;
-                ctx.ProblemDetails.Instance = $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}";
-            };
-        });
         services.AddHttpContextAccessor();
 
         services.AddFluentValidationAutoValidation();
@@ -100,6 +90,9 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             {
                 ctx.HttpContext.Response.StatusCode =
                     ctx.ProblemDetails.Status ?? StatusCodes.Status500InternalServerError;
+                ctx.ProblemDetails.Extensions["traceId"] = ctx.HttpContext.TraceIdentifier;
+                ctx.ProblemDetails.Extensions["timestamp"] = DateTime.UtcNow;
+                ctx.ProblemDetails.Instance = $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}";
             };
         });
         services.Configure<FormOptions>(x =>
