@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using StretchRoom.Infrastructure.AuthorizationTestApplication.Client;
 using StretchRoom.Infrastructure.Helpers;
+using StretchRoom.Infrastructure.Helpers.Sequences;
 using StretchRoom.Infrastructure.HttpClient.TokenManager;
 using StretchRoom.Infrastructure.Interfaces;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext.Requests;
@@ -99,6 +100,13 @@ public class DiCTests
         singletonExecutorExists.Should().NotBeNull();
         scopedExecutorExists.Should().NotBeNull();
         scopedExecutorDoesntExists.Should().NotBeNull();
+    }
+
+    [Test]
+    public void When_AppIsRunning_With_TestApp_Result_AtomicGeneratorExists()
+    {
+        _context.GetRequiredService<IAtomGenerator<int>>().Should().NotBeNull();
+        _context.GetRequiredService<IAtomGenerator<long>>().Should().NotBeNull();
     }
 
     private T? GetServiceIfExists<T>()

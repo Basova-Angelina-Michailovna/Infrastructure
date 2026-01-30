@@ -1,6 +1,7 @@
 using StretchRoom.Infrastructure.AuthorizationTestApplication.Client;
 using StretchRoom.Infrastructure.DatabaseRegistration;
 using StretchRoom.Infrastructure.Extensions;
+using StretchRoom.Infrastructure.Helpers.Sequences;
 using StretchRoom.Infrastructure.HttpClient.ClientRegistration;
 using StretchRoom.Infrastructure.Models;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext;
@@ -52,6 +53,7 @@ public class Startup(IConfiguration configuration) : ExtraStartupBase(configurat
 
         services.AddValidator<ChangeNameRequestValidator, ChangeNameRequest>();
         services.AddValidator<SomeBodyRequestValidator, SomeBodyRequest>();
+        services.AddAtomicGenerators();
 
         services.AddClient<IAuthAppClient, AuthAppClient>()
             .FromConfiguration(Configuration, AuthorizationTestApplication.BoundedContext.RoutesDictionary.ServiceName)
