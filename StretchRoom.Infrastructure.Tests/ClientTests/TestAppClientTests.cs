@@ -160,4 +160,14 @@ internal class TestAppClientTests
         pd.Instance.Should().NotBeEmpty();
         pd.Title.Should().NotBeEmpty();
     }
+
+    [Test]
+    public async Task When_SendExistsMethodWithoutResponseBody_With_Result_ApiException()
+    {
+        var act = () => _client.TestClient.MethodWithoutResponseBodyAsync(CancellationToken.None);
+        var pd = (await act.Should().ThrowAsync<ApiException>())
+            .And.ProblemDetails;
+        pd.Should().NotBeNull();
+        pd.Status.Should().Be(200);
+    }
 }

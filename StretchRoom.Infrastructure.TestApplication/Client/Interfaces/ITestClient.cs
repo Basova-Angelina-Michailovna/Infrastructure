@@ -20,4 +20,6 @@ public interface ITestClient
     Task ValidateAuthAsync(string jwt, CancellationToken token);
 
     Task NonExistsMethodAsync(CancellationToken token);
+
+    Task<CommandResultResponse> MethodWithoutResponseBodyAsync(CancellationToken token);
 }

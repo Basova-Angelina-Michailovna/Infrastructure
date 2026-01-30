@@ -178,4 +178,20 @@ public class TestClient(
             ApiExceptionHelper.ThrowApiException(result.Error);
         }
     }
+
+    public async Task<CommandResultResponse> MethodWithoutResponseBodyAsync(CancellationToken token)
+    {
+        var jwt = await GenerateTokenAsync(token);
+
+        var result = await GetJsonAsync<CommandResultResponse, ProblemDetails>(
+            url => url.AppendPathSegments(BasePath, RoutesDictionary.TestControllerV1.Methods.ValidateToken),
+            GetAuthHeaders(jwt.Token), token);
+
+        if (result is { IsSuccess: true, Result: not null })
+        {
+            return result.Result;
+        }
+
+        return ApiExceptionHelper.ThrowApiException(result);
+    }
 }

@@ -30,8 +30,6 @@ public class MigrationApplierService<TDbContext>(
         }
 
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        /*var migrations = await dbContext.Database.GetPendingMigrationsAsync(cancellationToken);
-        if (migrations.Any()) */
         await dbContext.Database.MigrateAsync(cancellationToken);
     }
 }

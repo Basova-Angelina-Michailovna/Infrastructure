@@ -33,4 +33,25 @@ public static class SrServerExtensions
             };
         }
     }
+
+    extension(Task)
+    {
+        /// <summary>
+        ///     Awaits until <paramref name="predicate" /> wont return true or <paramref name="timeout" />.
+        /// </summary>
+        /// <param name="predicate">The predicate.</param>
+        /// <param name="timeout">The timeout.</param>
+        /// <param name="token">The cancellation token.</param>
+        public static async Task WaitUntilAsync(Predicate<CancellationToken> predicate, TimeSpan timeout,
+            CancellationToken token = default)
+        {
+            var cts = new CancellationTokenSource(timeout);
+            token.Register(() => cts.Cancel());
+
+            while (!predicate(cts.Token) && !cts.IsCancellationRequested)
+            {
+                await Task.Delay(50, cts.Token);
+            }
+        }
+    }
 }

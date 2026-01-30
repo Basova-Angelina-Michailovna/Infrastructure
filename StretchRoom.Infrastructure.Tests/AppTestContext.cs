@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using StretchRoom.Infrastructure.Scheduling;
 using StretchRoom.Infrastructure.Tests.AppInitializer;
+using StretchRoom.Infrastructure.Tests.ScheduledTests.Helpers;
 using StretchRoom.Tests.Infrastructure.Helpers;
 using StretchRoom.Tests.Infrastructure.IntegrationTests;
 using Testcontainers.PostgreSql;
@@ -10,7 +12,8 @@ namespace StretchRoom.Infrastructure.Tests;
 [NonParallelizable]
 internal class AppTestContext
 {
-    private const string DatabaseName = "StretchRoom";
+    private static readonly string SolutionRelativePath = typeof(AppTestContext).Namespace!;
+    
     private const string DbUser = "admin";
     private const string DbPassword = "password";
 
@@ -26,7 +29,7 @@ internal class AppTestContext
     {
         Trace.Listeners.Add(new ConsoleTraceListener());
 
-        _postgres = new PostgreSqlBuilder() /*.WithDatabase(DatabaseName)*/.WithUsername(DbUser)
+        _postgres = new PostgreSqlBuilder().WithUsername(DbUser)
             .WithPassword(DbPassword)
             .Build();
         await _postgres.StartAsync();
@@ -37,7 +40,7 @@ internal class AppTestContext
         AuthAppClientContext.Initialize(conf =>
         {
             conf.UseProductionAppSettings = true;
-            conf.SolutionRelativePath = "StretchRoom.Infrastructure.Tests";
+            conf.SolutionRelativePath = SolutionRelativePath;
             conf.BuilderConfiguration = builder =>
             {
                 builder.AddInMemoryConfig("JwtOptions:Issuer", "vitaliy");
@@ -50,12 +53,17 @@ internal class AppTestContext
 
         AppContext = new AppTestClientContext(sr =>
         {
+            sr.AddSchedulingServices(true, async factory =>
+            {
+                await factory.ScheduleJobAsync<ScheduledTestJob>(Guid.NewGuid().ToString(),
+                    TimeSpan.FromMilliseconds(100));
+            });
             sr.AddSingleton<Func<DelegatingHandler>>(() => new TestRoutingMessageHandler());
         });
         AppContext.Initialize(conf =>
         {
             conf.UseProductionAppSettings = true;
-            conf.SolutionRelativePath = "StretchRoom.Infrastructure.Tests";
+            conf.SolutionRelativePath = SolutionRelativePath;
             conf.BuilderConfiguration = builder =>
             {
                 builder.AddInMemoryCollection(new Dictionary<string, string?>
