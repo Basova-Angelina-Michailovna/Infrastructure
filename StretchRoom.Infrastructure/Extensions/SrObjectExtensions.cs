@@ -85,4 +85,17 @@ public static class SrObjectExtensions
             return string.IsNullOrWhiteSpace(val);
         }
     }
+
+    extension(IEnumerable<string> strings)
+    {
+        /// <summary>
+        ///     Joins the string with specified <paramref name="separator" />.
+        /// </summary>
+        /// <param name="separator">The separator.</param>
+        /// <returns>The joined strings.</returns>
+        public string Join(string separator)
+        {
+            return string.Join(separator, strings);
+        }
+    }
 }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Logging;
 using StretchRoom.Infrastructure.Attributes;
+using StretchRoom.Infrastructure.Controllers;
 
 namespace StretchRoom.Infrastructure.Middlewares;
 
@@ -26,7 +27,11 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
     private readonly string[] _noLoggingPaths =
     [
         "/swagger/",
-        "/metrics"
+        "/metrics",
+        $"/{ServiceControllerRoutes.Controller}/{ServiceControllerRoutes.Methods.Healthz}",
+        $"/{ServiceControllerRoutes.Controller}/{ServiceControllerRoutes.Methods.Ping}",
+        $"/{ServiceControllerRoutes.Controller}/{ServiceControllerRoutes.Methods.HealthzStatus}",
+        $"/{ServiceControllerRoutes.Controller}/{ServiceControllerRoutes.Methods.Metrics}"
     ];
 
     /// <summary>

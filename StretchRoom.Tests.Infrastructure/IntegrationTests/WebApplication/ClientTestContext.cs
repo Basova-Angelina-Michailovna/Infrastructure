@@ -5,8 +5,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog.Extensions.Logging;
 using StretchRoom.Infrastructure.Extensions;
+using StretchRoom.Infrastructure.HttpClient.ServiceClient;
+using StretchRoom.Infrastructure.Models;
 using StretchRoom.Infrastructure.Services.ExecutedServices;
 using StretchRoom.Tests.Infrastructure.Helpers;
 
@@ -40,6 +44,18 @@ public abstract class ClientTestContext<TClient, TEntrypoint> : ServiceTestConte
     /// <param name="baseAddress">The base address.</param>
     /// <returns>The new instance of <see cref="TClient" />.</returns>
     protected abstract TClient CreateServiceClient(string baseAddress);
+
+    /// <summary>
+    ///     Creates the instance of <see cref="IServiceSystemClient" />.
+    /// </summary>
+    /// <param name="loggerFactory">The logger factory.</param>
+    /// <returns>The new instance of <see cref="IServiceSystemClient" />.</returns>
+    public IServiceSystemClient CreateServiceSystemClient(ILoggerFactory? loggerFactory = null)
+    {
+        var apiInfo = Factory.Services.GetRequiredService<IOptions<ServiceApiInfo>>();
+        var cache = CreateFlurlCache();
+        return new ServiceSystemClient(apiInfo, cache, loggerFactory ?? new SerilogLoggerFactory(), () => BaseAddress);
+    }
 
     /// <summary>
     ///     Creates the <see cref="IFlurlClientCache" /> with default middlewares.

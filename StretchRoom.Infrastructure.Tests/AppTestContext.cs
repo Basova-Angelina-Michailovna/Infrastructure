@@ -12,10 +12,9 @@ namespace StretchRoom.Infrastructure.Tests;
 [NonParallelizable]
 internal class AppTestContext
 {
-    private static readonly string SolutionRelativePath = typeof(AppTestContext).Namespace!;
-    
     private const string DbUser = "admin";
     private const string DbPassword = "password";
+    private static readonly string SolutionRelativePath = typeof(AppTestContext).Namespace!;
 
     private PostgreSqlContainer _postgres;
 

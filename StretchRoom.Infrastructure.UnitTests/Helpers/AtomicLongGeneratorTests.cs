@@ -7,8 +7,8 @@ namespace StretchRoom.Infrastructure.UnitTests.Helpers;
 
 public class AtomicLongGeneratorTests
 {
-    private AtomicLongGenerator _longGen;
     private AtomicIntGenerator _intGen;
+    private AtomicLongGenerator _longGen;
 
     [SetUp]
     public void Setup()

@@ -1,5 +1,6 @@
 using System.Reflection;
 using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
 using EBCEYS.ContainersEnvironment.HealthChecks.Extensions;
 using HealthChecks.ApplicationStatus.DependencyInjection;
 using JetBrains.Annotations;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Prometheus;
@@ -22,9 +24,11 @@ using StretchRoom.Infrastructure.ControllerFilters;
 using StretchRoom.Infrastructure.Extensions;
 using StretchRoom.Infrastructure.Helpers;
 using StretchRoom.Infrastructure.Helpers.Jwt;
+using StretchRoom.Infrastructure.Helpers.Swagger;
 using StretchRoom.Infrastructure.Interfaces;
 using StretchRoom.Infrastructure.Models;
 using StretchRoom.Infrastructure.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -78,6 +82,7 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             opts.Filters.Add<ApiExceptionFilter>();
             ConfigureFilters(opts.Filters);
         });
+        services.AddSingleton<IOptions<ServiceApiInfo>>(new OptionsWrapper<ServiceApiInfo>(ServiceApiInfo));
         services.AddHttpContextAccessor();
 
         services.AddFluentValidationAutoValidation();
@@ -149,7 +154,7 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
         app.UseCors(c => c.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod());
 
         app.UseExceptionCatcher();
-        
+
         app.UseMetricServer();
         app.UseHttpMetrics();
         app.UseRequestMetrics();
@@ -172,9 +177,11 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
         app.UseSwagger();
         app.UseSwaggerUI(opts =>
         {
-            foreach (var apiVersion in ServiceApiInfo.ApiVersions)
+            var descriptions = app.ApplicationServices.GetRequiredService<IApiVersionDescriptionProvider>();
+            foreach (var apiVersion in descriptions.ApiVersionDescriptions)
             {
-                opts.SwaggerEndpoint($"{ServiceApiInfo.BaseAddress}/swagger/{apiVersion}/swagger.json", apiVersion);
+                opts.SwaggerEndpoint($"{ServiceApiInfo.BaseAddress}/swagger/{apiVersion.GroupName}/swagger.json",
+                    apiVersion.GroupName);
             }
 
             opts.DocumentTitle = ServiceApiInfo.ServiceName;
@@ -261,16 +268,6 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(opts =>
         {
-            foreach (var apiVersion in ServiceApiInfo.ApiVersions)
-            {
-                opts.SwaggerDoc(apiVersion, new OpenApiInfo
-                {
-                    Title = $"{ServiceApiInfo.ServiceName} - {apiVersion}",
-                    Description = ServiceApiInfo.Description,
-                    Version = apiVersion
-                });
-            }
-
             opts.DocInclusionPredicate((docName, apiDesc) => apiDesc.GroupName == docName);
             if (UseAuthentication)
             {
@@ -308,5 +305,6 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             options.AssumeDefaultVersionWhenUnspecified = true;
             options.SubstituteApiVersionInUrl = true;
         });
+        services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
     }
 }

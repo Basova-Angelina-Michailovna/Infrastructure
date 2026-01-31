@@ -33,9 +33,8 @@ public class Startup(IConfiguration configuration) : ExtraStartupBase(configurat
 {
     protected override int? HealthCheckPort { get; init; } = 8080;
 
-    protected override ServiceApiInfo ServiceApiInfo { get; init; } = new("test-app", RoutesDictionary.BasePath, [
-        "v1"
-    ], "TestApplication");
+    protected override ServiceApiInfo ServiceApiInfo { get; init; } =
+        new("test-app", RoutesDictionary.BasePath, "TestApplication");
 
     protected override void ServicesConfiguration(IServiceCollection services)
     {

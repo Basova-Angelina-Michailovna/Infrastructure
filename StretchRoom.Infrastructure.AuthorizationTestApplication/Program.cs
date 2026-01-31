@@ -17,7 +17,7 @@ public class Program
 public class AuthorizationStartup(IConfiguration configuration) : ExtraStartupBase(configuration)
 {
     protected override ServiceApiInfo ServiceApiInfo { get; init; } =
-        new(RoutesDictionary.ServiceName, RoutesDictionary.BasePath, ["v1"], "TestAuthService");
+        new(RoutesDictionary.ServiceName, RoutesDictionary.BasePath, "TestAuthService");
 
     protected override bool UseAuthentication { get; init; } = true;
     protected override bool ProxyToken { get; init; } = false;
