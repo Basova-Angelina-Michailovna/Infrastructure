@@ -1,30 +1,75 @@
 using System.Diagnostics;
 using System.Text;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using StretchRoom.Infrastructure.Attributes;
 using StretchRoom.Infrastructure.Controllers;
 
 namespace StretchRoom.Infrastructure.Middlewares;
 
 /// <summary>
+///     The <see cref="HttpLoggingOptions" /> class.
+/// </summary>
+[PublicAPI]
+public class HttpLoggingOptions
+{
+    /// <summary>
+    ///     The path start to exclude from http logging.
+    /// </summary>
+    /// <example>/some/path*</example>
+    public string[] PathStartExcludeLogging { get; set; } = [];
+
+    /// <summary>
+    ///     The path contains to exclude from http logging.
+    /// </summary>
+    /// <example>*/some/path*</example>
+    public string[] PathContainsExcludeLogging { get; set; } = [];
+
+    /// <summary>
+    ///     The path end to exclude from http logging.
+    /// </summary>
+    /// <example>*/some/path</example>
+    public string[] PathEndExcludeLogging { get; set; } = [];
+
+    /// <summary>
+    ///     The log level to log bodies.
+    /// </summary>
+    public LogLevel LogLevelToLogBodies { get; set; } = LogLevel.Debug;
+
+    /// <summary>
+    ///     The logging content types.
+    /// </summary>
+    public string[] LoggingContentTypes { get; set; } = [];
+}
+/// <summary>
 ///     The request logging middleware.
 /// </summary>
 /// <param name="next">The request delegate.</param>
 /// <param name="logger">The logger.</param>
-public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
+[PublicAPI]
+public class RequestLoggingMiddleware(
+    RequestDelegate next,
+    IOptions<HttpLoggingOptions> loggingOpts,
+    ILogger<RequestLoggingMiddleware> logger)
 {
-    private const LogLevel LogLevelToLogBodies = LogLevel.Debug;
+    /// <summary>
+    ///     The string that will write to log if body should not be logged.
+    /// </summary>
+    public const string NoBodyLoggingString = "NO-LOGGING";
+
+    private readonly LogLevel _logLevelToLogBodies = loggingOpts.Value.LogLevelToLogBodies;
 
     private readonly string[] _loggingContentTypes =
     [
-        "text/",
+        ..loggingOpts.Value.LoggingContentTypes, "text/",
         "application/json",
         "application/xml"
     ];
 
-    private readonly string[] _noLoggingPaths =
+    private static readonly string[] ExtraNoLoggingPaths =
     [
         "/swagger/",
         "/metrics",
@@ -41,9 +86,8 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
     public async Task InvokeAsync(HttpContext context)
     {
         var endpoint = context.GetEndpoint();
-
         var noRequestLogging = endpoint?.Metadata.GetMetadata<NoRequestBodyLoggingAttribute>();
-        var noResponseLogging = endpoint?.Metadata.GetMetadata<NoResponseBodyLoggingAttribute>();
+        
         var stopwatch = Stopwatch.StartNew();
         await LogRequest(context, noRequestLogging);
 
@@ -58,6 +102,10 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
         finally
         {
             stopwatch.Stop();
+
+            endpoint ??= context.GetEndpoint();
+            var noResponseLogging = endpoint?.Metadata.GetMetadata<NoResponseBodyLoggingAttribute>();
+            
             await LogResponse(context, responseBody, originalBodyStream, stopwatch.Elapsed, noResponseLogging);
         }
     }
@@ -68,7 +116,7 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
 
         var request = context.Request;
         var shouldLog = ShouldLogRequestBody(context.Request, bodyLoggingAttribute);
-        var requestBody = shouldLog ? await ReadRequestBody(request) : "NO-LOGGING";
+        var requestBody = shouldLog ? await ReadRequestBody(request) : NoBodyLoggingString;
 
         logger.LogInformation("REQUEST({trace}) ==> {Method} {Path} {QueryString} {RequestBody}",
             context.TraceIdentifier,
@@ -85,11 +133,13 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
     {
         var shouldLog = ShouldLogResponseBody(context.Response, bodyLoggingAttribute);
         responseBody.Seek(0, SeekOrigin.Begin);
-        var responseText = shouldLog ? await new StreamReader(responseBody).ReadToEndAsync() : "NO-LOGGING";
+        var responseText = shouldLog ? await new StreamReader(responseBody).ReadToEndAsync() : NoBodyLoggingString;
         responseBody.Seek(0, SeekOrigin.Begin);
 
-        logger.LogInformation("<== RESPONSE({trace}): {StatusCode} {Path} {ContentType} {ResponseBody} {duration} ms",
+        logger.LogInformation(
+            "<== RESPONSE({trace}): {Method} {StatusCode} {Path} {ContentType} {ResponseBody} {duration} ms",
             context.TraceIdentifier,
+            context.Request.Method,
             context.Response.StatusCode,
             context.Request.GetDisplayUrl(),
             context.Response.ContentType,
@@ -126,8 +176,14 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
     private bool IsInNoLogsList(PathString path)
     {
         var pathString = path.HasValue ? path.Value : string.Empty;
-        return _noLoggingPaths.Aggregate(false,
-            (current, noLoggingPath) => current | pathString.Contains(noLoggingPath));
+        return ExtraNoLoggingPaths.Aggregate(false,
+                   (current, noLoggingPath) => current | pathString.Contains(noLoggingPath))
+               || loggingOpts.Value.PathStartExcludeLogging.Aggregate(false,
+                   (current, noLoggingPath) => current | pathString.StartsWith(noLoggingPath))
+               || loggingOpts.Value.PathContainsExcludeLogging.Aggregate(false,
+                   (current, noLoggingPath) => current | pathString.Contains(noLoggingPath))
+               || loggingOpts.Value.PathEndExcludeLogging.Aggregate(false,
+                   (current, noLoggingPath) => current | pathString.EndsWith(noLoggingPath)); 
     }
 
     private bool IsCorrectContentType(string contentType)
@@ -138,7 +194,7 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
 
     private bool IsCorrectLogLevel()
     {
-        return logger.IsEnabled(LogLevelToLogBodies);
+        return logger.IsEnabled(_logLevelToLogBodies);
     }
 
     private async Task<string> ReadRequestBody(HttpRequest request)

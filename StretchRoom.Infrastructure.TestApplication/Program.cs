@@ -3,6 +3,7 @@ using StretchRoom.Infrastructure.DatabaseRegistration;
 using StretchRoom.Infrastructure.Extensions;
 using StretchRoom.Infrastructure.Helpers.Sequences;
 using StretchRoom.Infrastructure.HttpClient.ClientRegistration;
+using StretchRoom.Infrastructure.Middlewares;
 using StretchRoom.Infrastructure.Models;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext.Requests;
@@ -32,6 +33,17 @@ public static class TestAppInitiator
 public class Startup(IConfiguration configuration) : ExtraStartupBase(configuration)
 {
     protected override int? HealthCheckPort { get; init; } = 8080;
+
+    protected override Action<HttpLoggingOptions>? HttpContextLogging { get; } = opts =>
+    {
+        opts.LogLevelToLogBodies = LogLevel.Trace;
+        opts.PathContainsExcludeLogging = [RoutesDictionary.TestControllerV1.Methods.GetToken];
+        opts.PathEndExcludeLogging = [RoutesDictionary.TestControllerV1.Methods.PostBody];
+        opts.PathStartExcludeLogging =
+        [
+            $"{RoutesDictionary.TestControllerV1.BaseRoute.Replace(RoutesDictionary.BasePath, "")}/{RoutesDictionary.TestControllerV1.Methods.GetQuery}"
+        ];
+    };
 
     protected override ServiceApiInfo ServiceApiInfo { get; init; } =
         new("test-app", RoutesDictionary.BasePath, "TestApplication");

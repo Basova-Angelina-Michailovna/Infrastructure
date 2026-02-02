@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using StretchRoom.Infrastructure.Middlewares;
 using StretchRoom.Infrastructure.Scheduling;
 using StretchRoom.Infrastructure.Tests.AppInitializer;
+using StretchRoom.Infrastructure.Tests.Helpers;
 using StretchRoom.Infrastructure.Tests.ScheduledTests.Helpers;
 using StretchRoom.Tests.Infrastructure.Helpers;
 using StretchRoom.Tests.Infrastructure.IntegrationTests;
@@ -19,6 +21,8 @@ internal class AppTestContext
     private PostgreSqlContainer _postgres;
 
     public static AppTestClientContext AppContext { get; private set; }
+
+    public static LogCatcherMiddleware<RequestLoggingMiddleware> AppLogCatcher { get; } = new();
 
     public static AuthAppTestClientContext AuthAppClientContext { get; private set; }
 
@@ -52,6 +56,7 @@ internal class AppTestContext
 
         AppContext = new AppTestClientContext(sr =>
         {
+            sr.AddSingleton<ILogger<RequestLoggingMiddleware>>(AppLogCatcher);
             sr.AddSchedulingServices(true, async factory =>
             {
                 await factory.ScheduleJobAsync<ScheduledTestJob>(Guid.NewGuid().ToString(),

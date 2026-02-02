@@ -26,6 +26,7 @@ using StretchRoom.Infrastructure.Helpers;
 using StretchRoom.Infrastructure.Helpers.Jwt;
 using StretchRoom.Infrastructure.Helpers.Swagger;
 using StretchRoom.Infrastructure.Interfaces;
+using StretchRoom.Infrastructure.Middlewares;
 using StretchRoom.Infrastructure.Models;
 using StretchRoom.Infrastructure.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -70,6 +71,11 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
     protected IConfiguration Configuration { get; } = configuration;
 
     /// <summary>
+    ///     The http context logging options.
+    /// </summary>
+    protected virtual Action<HttpLoggingOptions>? HttpContextLogging { get; }
+
+    /// <summary>
     ///     Configures the <paramref name="services" />.
     /// </summary>
     /// <param name="services">The services.</param>
@@ -77,6 +83,9 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
     {
         services.AddSerilog((_, loggerConf)
             => loggerConf.ReadFrom.Configuration(Configuration));
+
+        services.AddOptions<HttpLoggingOptions>().Configure(opts => { HttpContextLogging?.Invoke(opts); });
+        
         services.AddControllers(opts =>
         {
             opts.Filters.Add<ApiExceptionFilter>();
@@ -137,6 +146,9 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             app.UseDeveloperExceptionPage();
         }
 
+        app.UsePathBase(ServiceApiInfo.BaseAddress);
+        app.UseRouting();
+        
         app.UseRequestLogging();
 
         app.UseStatusCodePages(async ctx =>
@@ -149,8 +161,7 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             };
             await problemDetails.TryWriteAsync(problemDetailsContext);
         });
-        app.UsePathBase(ServiceApiInfo.BaseAddress);
-        app.UseRouting();
+        
         app.UseCors(c => c.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod());
 
         app.UseExceptionCatcher();
