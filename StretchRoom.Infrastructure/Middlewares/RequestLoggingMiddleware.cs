@@ -44,6 +44,7 @@ public class HttpLoggingOptions
     /// </summary>
     public string[] LoggingContentTypes { get; set; } = [];
 }
+
 /// <summary>
 ///     The request logging middleware.
 /// </summary>
@@ -60,15 +61,6 @@ public class RequestLoggingMiddleware(
     /// </summary>
     public const string NoBodyLoggingString = "NO-LOGGING";
 
-    private readonly LogLevel _logLevelToLogBodies = loggingOpts.Value.LogLevelToLogBodies;
-
-    private readonly string[] _loggingContentTypes =
-    [
-        ..loggingOpts.Value.LoggingContentTypes, "text/",
-        "application/json",
-        "application/xml"
-    ];
-
     private static readonly string[] ExtraNoLoggingPaths =
     [
         "/swagger/",
@@ -79,6 +71,15 @@ public class RequestLoggingMiddleware(
         $"/{ServiceControllerRoutes.Controller}/{ServiceControllerRoutes.Methods.Metrics}"
     ];
 
+    private readonly string[] _loggingContentTypes =
+    [
+        ..loggingOpts.Value.LoggingContentTypes, "text/",
+        "application/json",
+        "application/xml"
+    ];
+
+    private readonly LogLevel _logLevelToLogBodies = loggingOpts.Value.LogLevelToLogBodies;
+
     /// <summary>
     ///     Invokes the context.
     /// </summary>
@@ -87,7 +88,7 @@ public class RequestLoggingMiddleware(
     {
         var endpoint = context.GetEndpoint();
         var noRequestLogging = endpoint?.Metadata.GetMetadata<NoRequestBodyLoggingAttribute>();
-        
+
         var stopwatch = Stopwatch.StartNew();
         await LogRequest(context, noRequestLogging);
 
@@ -105,7 +106,7 @@ public class RequestLoggingMiddleware(
 
             endpoint ??= context.GetEndpoint();
             var noResponseLogging = endpoint?.Metadata.GetMetadata<NoResponseBodyLoggingAttribute>();
-            
+
             await LogResponse(context, responseBody, originalBodyStream, stopwatch.Elapsed, noResponseLogging);
         }
     }
@@ -183,7 +184,7 @@ public class RequestLoggingMiddleware(
                || loggingOpts.Value.PathContainsExcludeLogging.Aggregate(false,
                    (current, noLoggingPath) => current | pathString.Contains(noLoggingPath))
                || loggingOpts.Value.PathEndExcludeLogging.Aggregate(false,
-                   (current, noLoggingPath) => current | pathString.EndsWith(noLoggingPath)); 
+                   (current, noLoggingPath) => current | pathString.EndsWith(noLoggingPath));
     }
 
     private bool IsCorrectContentType(string contentType)

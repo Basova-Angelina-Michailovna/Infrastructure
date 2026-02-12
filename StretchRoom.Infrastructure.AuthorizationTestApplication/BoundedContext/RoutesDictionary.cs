@@ -19,4 +19,13 @@ public static class RoutesDictionary
             public const string ValidateAuth = "validate/auth";
         }
     }
+
+    public static class RabbitMqControllerV1
+    {
+        public static class Methods
+        {
+            public const string GetOk = "ok";
+            public const string GetJson = "getjson";
+        }
+    }
 }

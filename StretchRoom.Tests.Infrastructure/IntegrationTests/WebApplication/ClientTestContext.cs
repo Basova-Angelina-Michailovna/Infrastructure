@@ -28,7 +28,12 @@ public abstract class ClientTestContext<TClient, TEntrypoint> : ServiceTestConte
     /// <summary>
     ///     The service client.
     /// </summary>
-    public TClient ServiceClient { get; private set; }
+    public TClient ServiceClient { get; private set; } = null!;
+
+    /// <summary>
+    ///     The services.
+    /// </summary>
+    public IServiceProvider Services => Factory.Services;
 
 
     /// <inheritdoc />

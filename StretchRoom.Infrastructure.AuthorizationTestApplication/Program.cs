@@ -1,6 +1,9 @@
 using StretchRoom.Infrastructure.AuthorizationTestApplication.BoundedContext;
+using StretchRoom.Infrastructure.AuthorizationTestApplication.Rabbit;
 using StretchRoom.Infrastructure.AuthorizationTestApplication.SchedulingJobs;
 using StretchRoom.Infrastructure.Models;
+using StretchRoom.Infrastructure.Options;
+using StretchRoom.Infrastructure.RabbitMq;
 using StretchRoom.Infrastructure.Scheduling;
 
 namespace StretchRoom.Infrastructure.AuthorizationTestApplication;
@@ -24,6 +27,8 @@ public class AuthorizationStartup(IConfiguration configuration) : ExtraStartupBa
 
     protected override void ServicesConfiguration(IServiceCollection services)
     {
+        var rabbitConfig = Configuration.GetRabbitMqConfiguration("rabbit");
+        services.AddRabbitMqController<RabbitMqController>(rabbitConfig);
         services.AddSchedulingServices(true,
             async factory =>
             {

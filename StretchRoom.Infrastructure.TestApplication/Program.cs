@@ -5,6 +5,8 @@ using StretchRoom.Infrastructure.Helpers.Sequences;
 using StretchRoom.Infrastructure.HttpClient.ClientRegistration;
 using StretchRoom.Infrastructure.Middlewares;
 using StretchRoom.Infrastructure.Models;
+using StretchRoom.Infrastructure.Options;
+using StretchRoom.Infrastructure.RabbitMq;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext;
 using StretchRoom.Infrastructure.TestApplication.BoundedContext.Requests;
 using StretchRoom.Infrastructure.TestApplication.Commands;
@@ -65,6 +67,9 @@ public class Startup(IConfiguration configuration) : ExtraStartupBase(configurat
         services.AddValidator<ChangeNameRequestValidator, ChangeNameRequest>();
         services.AddValidator<SomeBodyRequestValidator, SomeBodyRequest>();
         services.AddAtomicGenerators();
+
+        var rabbitConfig = Configuration.GetRabbitMqConfiguration("rabbit");
+        services.AddRabbitMqClient<IAppRabbitClient, AppRabbitClient>(rabbitConfig);
 
         services.AddClient<IAuthAppClient, AuthAppClient>()
             .FromConfiguration(Configuration, AuthorizationTestApplication.BoundedContext.RoutesDictionary.ServiceName)

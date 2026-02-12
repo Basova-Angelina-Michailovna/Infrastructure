@@ -46,6 +46,11 @@ public class ServiceSystemClientTests
 
         act1.Should().NotBeNull();
         act2.Should().NotBeNull();
+
+        act1.Entries.Should().Contain(x => x.Key.StartsWith("psql"));
+        act1.Entries.Should().Contain(x => x.Key.StartsWith("rabbit-mq"));
+
+        act2.Entries.Should().Contain(x => x.Key.StartsWith("rabbit-mq"));
         act1.Status.Should().Be(UIHealthStatus.Healthy);
         act2.Status.Should().Be(UIHealthStatus.Healthy);
     }

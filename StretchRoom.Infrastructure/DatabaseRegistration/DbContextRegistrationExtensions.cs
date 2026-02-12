@@ -2,6 +2,7 @@ using FluentValidation;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using StretchRoom.Infrastructure.HealthChecks;
 using StretchRoom.Infrastructure.Services.ExecutedServices;
 
 namespace StretchRoom.Infrastructure.DatabaseRegistration;
@@ -33,6 +34,7 @@ public static class DbContextRegistrationExtensions
 
         services.AddDbContextFactory<TDbContext>(OptionsAction);
         services.AddBeforeHostingStarted<MigrationApplierService<TDbContext>>();
+        HealthChecksCollectorService.Psqls.Add(options.ConnectionString!);
         return;
 
         void OptionsAction(DbContextOptionsBuilder opts)

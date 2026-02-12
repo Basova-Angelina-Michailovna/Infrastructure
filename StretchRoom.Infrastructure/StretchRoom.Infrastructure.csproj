@@ -15,7 +15,10 @@
     <ItemGroup>
         <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1"/>
         <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1"/>
+        <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0"/>
+        <PackageReference Include="AspNetCore.HealthChecks.Rabbitmq" Version="9.0.0"/>
         <PackageReference Include="EBCEYS.ContainersEnvironment" Version="0.0.8"/>
+        <PackageReference Include="EBCEYS.RabbitMQ.Server.MappedService" Version="1.6.0"/>
         <PackageReference Include="Elastic.Serilog.Sinks" Version="9.0.0"/>
         <PackageReference Include="FluentValidation" Version="12.1.1"/>
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1"/>
@@ -54,6 +57,11 @@
         <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="10.1.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="10.1.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.1.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="StretchRoom.Tests.Infrastructure"/>
+        <InternalsVisibleTo Include="StretchRoom.Infrastructure.UnitTests"/>
     </ItemGroup>
 
 </Project>

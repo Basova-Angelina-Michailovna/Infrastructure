@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using EBCEYS.RabbitMQ.Configuration;
 using StretchRoom.Infrastructure.Middlewares;
 using StretchRoom.Infrastructure.Scheduling;
 using StretchRoom.Infrastructure.Tests.AppInitializer;
@@ -6,6 +7,7 @@ using StretchRoom.Infrastructure.Tests.Helpers;
 using StretchRoom.Infrastructure.Tests.ScheduledTests.Helpers;
 using StretchRoom.Tests.Infrastructure.Helpers;
 using StretchRoom.Tests.Infrastructure.IntegrationTests;
+using StretchRoom.Tests.Infrastructure.IntegrationTests.ExternalServices.Containers;
 using Testcontainers.PostgreSql;
 
 namespace StretchRoom.Infrastructure.Tests;
@@ -16,9 +18,14 @@ internal class AppTestContext
 {
     private const string DbUser = "admin";
     private const string DbPassword = "password";
+    private const string QueueName = "someQueue";
+    private const string ExName = "someEx";
+    private const string SectionBase = "rabbit";
+
     private static readonly string SolutionRelativePath = typeof(AppTestContext).Namespace!;
 
-    private PostgreSqlContainer _postgres;
+    private IDependencyInitializer<PostgreSqlContainer> _postgres;
+    private RabbitMqInitializer _rabbit;
 
     public static AppTestClientContext AppContext { get; private set; }
 
@@ -32,10 +39,10 @@ internal class AppTestContext
     {
         Trace.Listeners.Add(new ConsoleTraceListener());
 
-        _postgres = new PostgreSqlBuilder().WithUsername(DbUser)
-            .WithPassword(DbPassword)
-            .Build();
-        await _postgres.StartAsync();
+        _postgres = new PostgresInitializer(DbUser, DbPassword);
+        var container = await _postgres.InitializeAsync();
+        _rabbit = new RabbitMqInitializer(DbUser, DbPassword);
+        var rabbit = await _rabbit.InitializeAsync();
 
 
         AuthAppClientContext = new AuthAppTestClientContext(sr =>
@@ -49,6 +56,8 @@ internal class AppTestContext
                 builder.AddInMemoryConfig("JwtOptions:Issuer", "vitaliy");
                 builder.AddInMemoryConfig("JwtOptions:Audience", "vitaliy");
                 builder.AddInMemoryConfig("JwtOptions:Base64Key", new SrRandomizer().HexString(64));
+                builder.AddRabbitMqConfig(rabbit, SectionBase, ExName, ExchangeTypes.Fanout, QueueName,
+                    TimeSpan.FromSeconds(5));
             };
         });
 
@@ -72,9 +81,11 @@ internal class AppTestContext
             {
                 builder.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    { "ConnectionStrings:TestApplication", $"{_postgres.GetConnectionString()};Database=dev-db" },
+                    { "ConnectionStrings:TestApplication", $"{container.GetConnectionString()};Database=dev-db" },
                     { "auth-service:ServiceUrl", AuthAppClientContext.BaseAddress }
                 });
+                builder.AddRabbitMqConfig(rabbit, SectionBase, ExName, ExchangeTypes.Fanout, QueueName,
+                    TimeSpan.FromSeconds(5));
             };
         });
 
@@ -87,7 +98,7 @@ internal class AppTestContext
         AuthAppClientContext.Teardown();
         AppContext.Teardown();
 
-        await _postgres.StopAsync();
-        await _postgres.DisposeAsync();
+        await _postgres.TeardownAsync();
+        await _rabbit.TeardownAsync();
     }
 }

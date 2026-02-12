@@ -22,6 +22,7 @@ using Serilog;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 using StretchRoom.Infrastructure.ControllerFilters;
 using StretchRoom.Infrastructure.Extensions;
+using StretchRoom.Infrastructure.HealthChecks;
 using StretchRoom.Infrastructure.Helpers;
 using StretchRoom.Infrastructure.Helpers.Jwt;
 using StretchRoom.Infrastructure.Helpers.Swagger;
@@ -85,7 +86,7 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             => loggerConf.ReadFrom.Configuration(Configuration));
 
         services.AddOptions<HttpLoggingOptions>().Configure(opts => { HttpContextLogging?.Invoke(opts); });
-        
+
         services.AddControllers(opts =>
         {
             opts.Filters.Add<ApiExceptionFilter>();
@@ -127,11 +128,13 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
         var healthChecksBuilder = services.ConfigureHealthChecks();
         healthChecksBuilder?.AddApplicationStatus();
         healthChecksBuilder?.AddApplicationInsightsPublisher();
-        ConfigureHealthChecks(healthChecksBuilder);
 
         services.AddSingleton<ICommandExecutor, CommandExecutor>();
         services.AddScoped<IScopedCommandExecutor, ScopedCommandExecutor>();
         ServicesConfiguration(services);
+        ConfigureHealthChecks(healthChecksBuilder);
+        healthChecksBuilder?.AddRabbitMqHealthChecks();
+        healthChecksBuilder?.AddNpgsqlHealthChecks();
     }
 
     /// <summary>
@@ -148,7 +151,7 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
 
         app.UsePathBase(ServiceApiInfo.BaseAddress);
         app.UseRouting();
-        
+
         app.UseRequestLogging();
 
         app.UseStatusCodePages(async ctx =>
@@ -161,7 +164,7 @@ public abstract class ExtraStartupBase(IConfiguration configuration) : IStartupB
             };
             await problemDetails.TryWriteAsync(problemDetailsContext);
         });
-        
+
         app.UseCors(c => c.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod());
 
         app.UseExceptionCatcher();
