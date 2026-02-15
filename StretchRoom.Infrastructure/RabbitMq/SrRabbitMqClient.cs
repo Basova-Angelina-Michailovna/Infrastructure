@@ -68,4 +68,78 @@ public abstract class SrRabbitMqClient : IRabbitMQClient
     {
         return _client.SendRequestAsync<T>(data, mandatory, token);
     }
+
+    /// <summary>
+    ///     Sends the messages.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <param name="method">The method name.</param>
+    /// <param name="mandatory">The mandatory.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <returns></returns>
+    public Task SendMessageAsync<TMessage>(TMessage message, string method, bool mandatory = false,
+        CancellationToken token = default) where TMessage : notnull
+    {
+        return _client.SendMessageAsync(new RabbitMQRequestData
+        {
+            Method = method,
+            Params = [message]
+        }, mandatory, token);
+    }
+
+    /// <summary>
+    ///     Sends the messages.
+    /// </summary>
+    /// <param name="method">The method name.</param>
+    /// <param name="mandatory">The mandatory.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <returns></returns>
+    public Task SendMessageAsync(string method, bool mandatory = false,
+        CancellationToken token = default)
+    {
+        return _client.SendMessageAsync(new RabbitMQRequestData
+        {
+            Method = method
+        }, mandatory, token);
+    }
+
+    /// <summary>
+    ///     Sends the request.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="method">The method name.</param>
+    /// <param name="mandatory">The mandatory.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TRequest"></typeparam>
+    /// <typeparam name="TResponse"></typeparam>
+    /// <returns></returns>
+    public Task<TResponse?> SendRequestAsync<TRequest, TResponse>(TRequest request, string method,
+        bool mandatory = false,
+        CancellationToken token = default)
+        where TRequest : notnull
+    {
+        return _client.SendRequestAsync<TResponse>(new RabbitMQRequestData
+        {
+            Method = method,
+            Params = [request]
+        }, mandatory, token);
+    }
+
+    /// <summary>
+    ///     Sends the request.
+    /// </summary>
+    /// <param name="method">The method name.</param>
+    /// <param name="mandatory">The mandatory.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <typeparam name="TResponse"></typeparam>
+    /// <returns></returns>
+    public Task<TResponse?> SendRequestAsync<TResponse>(string method, bool mandatory = false,
+        CancellationToken token = default)
+    {
+        return _client.SendRequestAsync<TResponse>(new RabbitMQRequestData
+        {
+            Method = method
+        }, mandatory, token);
+    }
 }

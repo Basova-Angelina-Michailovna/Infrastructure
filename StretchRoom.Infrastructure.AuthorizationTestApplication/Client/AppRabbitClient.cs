@@ -1,6 +1,5 @@
 using EBCEYS.RabbitMQ.Client;
 using EBCEYS.RabbitMQ.Configuration;
-using EBCEYS.RabbitMQ.Server.MappedService.Data;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using StretchRoom.Infrastructure.AuthorizationTestApplication.BoundedContext;
@@ -21,20 +20,14 @@ public class AppRabbitClient(
     /// <inheritdoc />
     public Task<string?> GetOkAsync(CancellationToken token = default)
     {
-        return SendRequestAsync<string>(new RabbitMQRequestData
-        {
-            Method = RoutesDictionary.RabbitMqControllerV1.Methods.GetOk
-        }, token: token);
+        return SendRequestAsync<string?>(RoutesDictionary.RabbitMqControllerV1.Methods.GetOk, token: token);
     }
 
     /// <inheritdoc />
     public Task<GenerateTokenResponse?> GenerateTokenAsync(GenerateTokenRequest request,
         CancellationToken token = default)
     {
-        return SendRequestAsync<GenerateTokenResponse?>(new RabbitMQRequestData
-        {
-            Method = RoutesDictionary.RabbitMqControllerV1.Methods.GetJson,
-            Params = [request]
-        }, token: token);
+        return SendRequestAsync<GenerateTokenRequest, GenerateTokenResponse>(request,
+            RoutesDictionary.RabbitMqControllerV1.Methods.GetJson, token: token);
     }
 }
