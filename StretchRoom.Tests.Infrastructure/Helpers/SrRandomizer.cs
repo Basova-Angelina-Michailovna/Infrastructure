@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -13,16 +14,19 @@ namespace StretchRoom.Tests.Infrastructure.Helpers;
 /// </summary>
 /// <param name="seed">The seed.</param>
 [PublicAPI]
-public class SrRandomizer(int seed = 0)
+public partial class SrRandomizer(int seed = 0)
 {
     private const int MaxLengthForStringGeneration = 256;
+
+    private static readonly string DefaultChars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToLower();
 
     private readonly Random _random = new(seed != 0 ? seed : Random.Shared.Next());
 
     /// <summary>
     ///     The chars for string generation.
     /// </summary>
-    public string Chars { get; set; } = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToLower();
+    public string Chars { get; set; } = DefaultChars;
 
     private string HexChars { get; } = "ABCDEF1234567890";
 
@@ -45,6 +49,12 @@ public class SrRandomizer(int seed = 0)
         return String(length, Chars);
     }
 
+    /// <summary>
+    ///     Gets the random string with specified length and alphabet.
+    /// </summary>
+    /// <param name="length">The length.</param>
+    /// <param name="chars">The alphabet.</param>
+    /// <returns>The new random string.</returns>
     private string String(uint length, string chars)
     {
         length = length == 0 ? UInt(0U, byte.MaxValue) : length;
@@ -59,9 +69,15 @@ public class SrRandomizer(int seed = 0)
     /// </summary>
     /// <param name="length">The string length. If 0 the random length will be.</param>
     /// <returns>The new instance of hex <see cref="string" />.</returns>
-    public string HexString(uint length = 0) //TODO: test it 
+    public string HexString(uint length = 0)
     {
-        return String(length, HexChars);
+        var stringLength = length == 0 ? UInt(0U, byte.MaxValue) : length;
+        if (stringLength % 2 == 1)
+        {
+            stringLength++;
+        }
+
+        return String(stringLength, HexChars);
     }
 
     /// <summary>
@@ -325,6 +341,63 @@ public class SrRandomizer(int seed = 0)
     }
 
     /// <summary>
+    ///     Gets the random bool.
+    /// </summary>
+    /// <param name="weight">The weight.</param>
+    /// <remarks>Weight 0.7 meens that 70% of bool values will be true.</remarks>
+    /// <returns>The random bool.</returns>
+    public bool Bool(float weight = 0.5f)
+    {
+        return weight >= Double(0, 1);
+    }
+
+    /// <summary>
+    ///     The random email with random domain.
+    /// </summary>
+    /// <param name="length">The prefix length.</param>
+    /// <param name="domainLength">The domain prefix length.</param>
+    /// <param name="postfix">The email postfix. Default is <c>com</c>.</param>
+    /// <returns></returns>
+    public string Email(uint length = 16, uint domainLength = 8, string postfix = "com")
+    {
+        return Email(length, Domain(domainLength, postfix));
+    }
+
+    /// <summary>
+    ///     The random email with specified domain.
+    /// </summary>
+    /// <param name="length">The prefix length.</param>
+    /// <param name="domain">The domain.</param>
+    /// <returns>The new string with random email.</returns>
+    /// <exception cref="InvalidOperationException">If domain contains spec symbols.</exception>
+    public string Email(uint length, string domain)
+    {
+        if (!LatAlphabetAndNumsRegex().IsMatch(domain))
+        {
+            throw new InvalidOperationException("The domain should not contain spec symbols!");
+        }
+
+        return $"{String(length, DefaultChars)}@{domain}".ToLower();
+    }
+
+    /// <summary>
+    ///     The random domain.
+    /// </summary>
+    /// <param name="length">The domain prefix length.</param>
+    /// <param name="postfix">The postfix. Default is <c>com</c>.</param>
+    /// <returns>The new string with domain.</returns>
+    /// <example>vitaliy.com</example>
+    public string Domain(uint length = 8, string postfix = "com")
+    {
+        if (!LatAlphabetAndNumsRegex().IsMatch(postfix))
+        {
+            throw new InvalidOperationException("The domain should not contain spec symbols!");
+        }
+
+        return $"{String(length, DefaultChars)}.{postfix}".ToLower();
+    }
+
+    /// <summary>
     ///     Gets the random datetime.
     /// </summary>
     /// <returns>The random datetime.</returns>
@@ -502,7 +575,25 @@ public class SrRandomizer(int seed = 0)
     public string Jwt(JwtOptions opts, IEnumerable<Claim> claims)
     {
         var tokenGenerator = new RandomJwtGenerator(opts);
-        return tokenGenerator.GenerateKey(claims);
+        return Jwt(tokenGenerator, claims);
+    }
+
+    /// <summary>
+    ///     The random jwt generator instance.
+    /// </summary>
+    public IJwtGenerator RandomJwtGeneratorInstance => new RandomJwtGenerator(JwtOptions());
+
+    /// <summary>
+    ///     Generates the random jwt with specified <typeparamref name="TJwtGenerator" /> and <paramref name="claims" />.
+    /// </summary>
+    /// <param name="generator">The jwt generator.</param>
+    /// <param name="claims">The claims.</param>
+    /// <typeparam name="TJwtGenerator"></typeparam>
+    /// <returns></returns>
+    public string Jwt<TJwtGenerator>(TJwtGenerator generator, IEnumerable<Claim> claims)
+        where TJwtGenerator : IJwtGenerator
+    {
+        return generator.GenerateKey(claims);
     }
 
     /// <summary>
@@ -532,6 +623,9 @@ public class SrRandomizer(int seed = 0)
     {
         return RandomJwtGenerator.GenerateRandomOptions(this);
     }
+
+    [GeneratedRegex("[a-z,A-Z,0-9]")]
+    private static partial Regex LatAlphabetAndNumsRegex();
 
     /// <summary>
     ///     The <see cref="RandomJwtGenerator" /> class.
@@ -571,8 +665,8 @@ public class SrRandomizer(int seed = 0)
         {
             return new JwtOptions
             {
-                Audience = randomizer.String(32),
-                Issuer = randomizer.String(32),
+                Audience = randomizer.Domain(32),
+                Issuer = randomizer.Domain(32),
                 Base64Key = randomizer.HexString(128),
                 TokenTimeToLive = randomizer.Int(0, 2) % 2 == 0
                     ? null

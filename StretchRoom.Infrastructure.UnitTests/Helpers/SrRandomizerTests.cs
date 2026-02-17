@@ -1,3 +1,4 @@
+using System.Net.Mail;
 using System.Security.Claims;
 using AwesomeAssertions;
 using Microsoft.Extensions.Logging;
@@ -227,6 +228,77 @@ public class SrRandomizerTests
         jwtValidationResults!.Issuer.Should().BeEquivalentTo(opts.Issuer);
         jwtValidationResults.Claims.Should().Contain(c => claims.Any(x => x.Value == c.Value && x.Type == c.Type));
         jwtValidationResults.Audiences.Should().Contain(x => x == opts.Audience);
+    }
+
+    [TestCase(10000, 0.5f)]
+    [TestCase(10000, 0.1f)]
+    [TestCase(10000, 0.9f)]
+    public void When_RandomBool_With_SpecifiedNumOfAttemptsAndWeight_Result_AproximatlyEqualToMat(int numOfAttempts,
+        float weight)
+    {
+        var bools = Enumerable.Range(0, numOfAttempts).Select(_ => _randomizer.Bool(weight)).ToArray();
+        var numOfTrue = bools.Where(x => x).ToArray().Length;
+
+        var weightCalc = Math.Round(Convert.ToDouble(numOfTrue) / Convert.ToDouble(numOfAttempts), 1);
+
+        Math.Abs(weightCalc - weight).Should().BeLessThanOrEqualTo(0.1f);
+    }
+
+    [TestCase(1000)]
+    public void When_RandomEmail_With_SpecifiedNumOfAttempts_Result_ValidEmails(int numOfAttempts)
+    {
+        var emails = Enumerable.Range(0, numOfAttempts).Select(_ => _randomizer.Email()).ToArray();
+
+        emails.Should().AllSatisfy(email => IsEmailValid(email).Should().BeTrue());
+    }
+
+    [TestCase(10U, 4U, "com")]
+    [TestCase(16U, 8U, "net")]
+    public void When_RandomEmail_With_GenerationRules_Result_ValidEmails(uint length, uint domainLength, string postfix)
+    {
+        var email = _randomizer.Email(length, domainLength, postfix);
+        var mail = new MailAddress(email);
+        mail.Host.Should().HaveLength((int)domainLength + postfix.Length + 1)
+            .And.EndWith($".{postfix}");
+        mail.User.Should().HaveLength((int)length);
+    }
+
+    [Test]
+    public void When_RandomEmail_With_NotValidDomain_Result_InvalidOperationException()
+    {
+        var alphabet = "@#!$%^&*()_+-=<>";
+        var rand = new SrRandomizer
+        {
+            Chars = alphabet
+        };
+        var domain = rand.String();
+        var actDomain = () => rand.Domain(10, domain);
+        var actEmail = () => rand.Email(16, 8, domain);
+        actDomain.Should().Throw<InvalidOperationException>();
+        actEmail.Should().Throw<InvalidOperationException>();
+    }
+
+    [TestCase(10000)]
+    public void When_RandomHexString_With_SpecifiedNumOfAttempts_Result_ValidHexStrings(int numOfAttempts)
+    {
+        var hexes = () =>
+            Enumerable.Range(0, numOfAttempts).Select(_ => _randomizer.HexString()).Select(Convert.FromHexString)
+                .ToArray();
+
+        hexes.Should().NotThrow();
+    }
+
+    private static bool IsEmailValid(string address)
+    {
+        try
+        {
+            _ = new MailAddress(address);
+            return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 
     private static IEnumerable<TestCaseData<TimeSpan, TimeSpan>> GetTestTimeSpans()
